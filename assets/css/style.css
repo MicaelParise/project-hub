@@ -1,0 +1,112 @@
+/* Efeitos que os utilitarios do Tailwind nao cobrem: scanlines, glow, cursor e scrollbar */
+
+::selection {
+  background: var(--term-accent);
+  color: var(--term-bg);
+}
+
+html {
+  scrollbar-color: var(--term-accent) var(--term-bg-alt);
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--term-bg-alt);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--term-accent);
+  border: 2px solid var(--term-bg-alt);
+}
+
+/* overlay de scanlines, fixo e discreto */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.08) 0px,
+    rgba(0, 0, 0, 0.08) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+}
+
+.dark .scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 255, 65, 0.05) 0px,
+    rgba(0, 255, 65, 0.05) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.5;
+  mix-blend-mode: screen;
+}
+
+/* glow de texto reutilizavel para titulos e destaques */
+.text-glow {
+  text-shadow: 0 0 6px var(--term-accent), 0 0 14px color-mix(in srgb, var(--term-accent) 55%, transparent);
+}
+
+.dark .text-glow {
+  text-shadow: 0 0 8px var(--term-accent), 0 0 20px color-mix(in srgb, var(--term-accent) 65%, transparent);
+}
+
+/* cursor de terminal piscando */
+.cursor-blink {
+  display: inline-block;
+  width: 0.55em;
+  margin-left: 0.15em;
+  background: var(--term-accent);
+  animation: blink 1s step-end infinite;
+  box-shadow: 0 0 8px var(--term-accent);
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* glow sutil ao passar o mouse/foco nos cards */
+.card-frame {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.card-frame:hover,
+.card-frame:focus-visible {
+  border-color: var(--term-accent);
+  box-shadow: 0 0 0 1px var(--term-accent), 0 0 22px color-mix(in srgb, var(--term-accent) 35%, transparent);
+  transform: translateY(-2px);
+}
+
+/* foco visivel no padrao terminal, para navegacao via teclado */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px dashed var(--term-accent);
+  outline-offset: 3px;
+}
+
+/* botao de tema flutuante */
+.theme-toggle .icon-moon,
+.theme-toggle .icon-sun {
+  display: none;
+}
+
+.theme-toggle .icon-moon {
+  display: block;
+}
+
+.dark .theme-toggle .icon-sun {
+  display: block;
+}
+
+.dark .theme-toggle .icon-moon {
+  display: none;
+}
