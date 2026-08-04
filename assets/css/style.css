@@ -1,5 +1,27 @@
 /* Efeitos que os utilitarios do Tailwind nao cobrem: scanlines, glow, cursor e scrollbar */
 
+/* tokens de tema compartilhados por todas as paginas (hub + projetos) */
+:root {
+  --term-bg: #eae7df;
+  --term-bg-alt: #dcd8cd;
+  --term-fg: #1b1f1c;
+  --term-fg-dim: #55605a;
+  --term-accent: #006b27;
+  --term-border: #006b274d;
+  --term-fg-soft: #3a4038;
+  --term-toggle-bg: #eae7dfcc;
+}
+html.dark {
+  --term-bg: #0a0e0a;
+  --term-bg-alt: #10160f;
+  --term-fg: #d6ffe0;
+  --term-fg-dim: #6f8f76;
+  --term-accent: #00ff41;
+  --term-border: #00ff4133;
+  --term-fg-soft: #a9c9ae;
+  --term-toggle-bg: #0a0e0acc;
+}
+
 ::selection {
   background: var(--term-accent);
   color: var(--term-bg);
