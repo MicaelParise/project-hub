@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code Reader :: MicaelParise</title>
+  <meta name="description" content="Leia o conteúdo de um QR Code a partir de uma imagem, direto no navegador.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%232563eb'/%3E%3Crect x='4' y='4' width='6' height='6' fill='white'/%3E%3Crect x='14' y='4' width='6' height='6' fill='white'/%3E%3Crect x='4' y='14' width='6' height='6' fill='white'/%3E%3C/svg%3E">
+
+  <!-- Define o tema antes da primeira renderização para não piscar entre claro e escuro -->
+  <script>
+    (function () {
+      var salvo = localStorage.getItem('tema');
+      var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', escuro);
+    })();
+  </script>
+
+  <!-- Bloqueia transições e animações até a página terminar de carregar, evitando qualquer piscada -->
+  <script>
+    document.documentElement.classList.add('pre-carregamento');
+    window.addEventListener('load', function () {
+      document.documentElement.classList.remove('pre-carregamento');
+    });
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            term: {
+              bg: 'var(--term-bg)',
+              alt: 'var(--term-bg-alt)',
+              fg: 'var(--term-fg)',
+              dim: 'var(--term-fg-dim)',
+              accent: 'var(--term-accent)',
+              border: 'var(--term-border)',
+              soft: 'var(--term-fg-soft)',
+              toggle: 'var(--term-toggle-bg)',
+            },
+          },
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    [x-cloak] { display: none !important; }
+    .pre-carregamento, .pre-carregamento * {
+      transition: none !important;
+      animation: none !important;
+    }
+  </style>
+
+  <script src="../../assets/js/app.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="min-h-screen bg-term-bg text-term-fg font-mono antialiased transition-colors">
+<div class="scanlines" aria-hidden="true"></div>
+
+  <div x-data="leitorQr()" class="flex min-h-screen flex-col">
+
+    <header class="px-6 py-8 sm:px-10">
+      <div class="mx-auto flex max-w-5xl items-center gap-3">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-term-accent bg-term-alt text-term-accent shadow-sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+            <path d="M14 14h3v3h-3zM19 14h2v2h-2zM14 19h2v2h-2zM19 19h2v2h-2z"></path>
+          </svg>
+        </span>
+        <div>
+          <h1 class="font-display text-lg leading-tight sm:text-xl text-term-accent text-glow">QR Code Reader</h1>
+          <p class="text-sm text-term-dim">Envie uma imagem e leia o conteúdo na hora</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex flex-1 items-start justify-center px-6 pb-20 sm:px-10">
+      <div class="mx-auto w-full max-w-5xl">
+
+        <div class="grid gap-6 md:grid-cols-2 md:items-stretch">
+
+          <!-- Área de envio da imagem -->
+          <section
+            class="card-frame relative flex min-h-[16rem] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-term-border bg-term-alt p-8 text-center"
+            :class="arrastando ? 'border-term-accent' : ''"
+            @dragover.prevent="arrastando = true"
+            @dragleave.prevent="arrastando = false"
+            @drop.prevent="soltarArquivo($event)"
+            @click="$refs.arquivo.click()"
+            @keydown.enter="$refs.arquivo.click()"
+            role="button"
+            tabindex="0"
+          >
+            <input type="file" accept="image/*" class="hidden" x-ref="arquivo" @change="selecionarArquivo($event)">
+
+            <template x-if="!imagemUrl">
+              <div class="flex flex-col items-center gap-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="h-10 w-10 text-term-accent">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V9m0 0-3.5 3.5M12 9l3.5 3.5"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.5 17.5A4 4 0 0 1 7 9.6a5.5 5.5 0 0 1 10.6-1.9A4.5 4.5 0 0 1 17.5 17"></path>
+                </svg>
+                <p class="font-medium text-term-fg">Clique ou arraste uma imagem</p>
+                <p class="text-sm text-term-dim">PNG, JPG ou WEBP com o QR Code</p>
+              </div>
+            </template>
+
+            <template x-if="imagemUrl">
+              <img :src="imagemUrl" alt="Imagem enviada com o QR Code" class="max-h-52 rounded-xl border border-term-border object-contain">
+            </template>
+
+            <div x-show="carregando" x-cloak class="absolute inset-0 flex items-center justify-center rounded-xl bg-term-bg/70 backdrop-blur-sm">
+              <svg class="h-7 w-7 animate-spin text-term-accent" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+            </div>
+          </section>
+
+          <!-- Resultado da leitura -->
+          <section class="card-frame flex flex-col rounded-xl border border-term-border bg-term-alt p-6">
+            <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-term-dim">Conteúdo lido</h2>
+
+            <p
+              x-show="!resultado && !erro"
+              x-text="carregando ? 'Lendo o QR Code...' : 'O texto do QR Code aparece aqui'"
+              class="flex flex-1 items-center justify-center text-center text-sm text-term-dim"
+            >O texto do QR Code aparece aqui</p>
+
+            <p x-show="erro" x-cloak x-text="erro" class="flex flex-1 items-center justify-center text-center text-sm text-red-500"></p>
+
+            <textarea
+              x-show="resultado"
+              x-cloak
+              x-text="resultado"
+              readonly
+              spellcheck="false"
+              class="min-h-32 flex-1 resize-none rounded-xl border border-term-border bg-term-bg p-4 text-sm font-mono text-term-accent outline-none focus:border-term-accent"
+            ></textarea>
+
+            <div class="mt-4 flex gap-3">
+              <button
+                @click="limpar()"
+                :disabled="!resultado && !imagemUrl && !erro"
+                class="flex-1 rounded-xl border border-term-border bg-term-bg py-2.5 text-sm font-medium text-term-fg transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 hover:border-term-accent hover:text-term-accent"
+              >
+                Limpar
+              </button>
+              <button
+                @click="copiar()"
+                :disabled="!resultado"
+                class="flex-1 rounded-xl border border-term-accent bg-term-accent py-2.5 text-sm font-medium text-term-bg shadow-sm transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span x-text="copiado ? 'Copiado!' : 'Copiar texto'"></span>
+              </button>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- Guia rápido, com mais espaço disponível em telas largas -->
+        <div class="mt-10 hidden gap-6 lg:grid lg:grid-cols-3">
+          <div class="card-frame flex items-start gap-3 rounded-xl border border-term-border bg-term-alt p-4">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-term-accent bg-term-bg text-term-accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V9m0 0-3.5 3.5M12 9l3.5 3.5"></path>
+              </svg>
+            </span>
+            <div>
+              <p class="text-sm font-semibold text-term-fg">1. Envie a imagem</p>
+              <p class="text-sm text-term-dim">Escolha um arquivo com o QR Code visível.</p>
+            </div>
+          </div>
+          <div class="card-frame flex items-start gap-3 rounded-xl border border-term-border bg-term-alt p-4">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-term-accent bg-term-bg text-term-accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+                <circle cx="11" cy="11" r="6"></circle>
+                <path stroke-linecap="round" d="m20 20-3.5-3.5"></path>
+              </svg>
+            </span>
+            <div>
+              <p class="text-sm font-semibold text-term-fg">2. Aguarde a leitura</p>
+              <p class="text-sm text-term-dim">O conteúdo é decodificado automaticamente.</p>
+            </div>
+          </div>
+          <div class="card-frame flex items-start gap-3 rounded-xl border border-term-border bg-term-alt p-4">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-term-accent bg-term-bg text-term-accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+                <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
+              </svg>
+            </span>
+            <div>
+              <p class="text-sm font-semibold text-term-fg">3. Copie o texto</p>
+              <p class="text-sm text-term-dim">Use o resultado onde precisar.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Voltar para o hub -->
+  <a href="../../index.html" aria-label="Voltar para o hub de projetos"
+     class="fixed bottom-6 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
+  </a>
+
+  <!-- Botão flutuante de tema -->
+  <button
+    type="button"
+    x-data="themeToggle()"
+    x-on:click="toggle()"
+    class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
+    aria-label="Alternar entre tema claro e escuro"
+  >
+    <svg class="icon-sun w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+      <circle cx="12" cy="12" r="4.5"></circle>
+      <g stroke-linecap="round">
+        <line x1="12" y1="1.5" x2="12" y2="4"/>
+        <line x1="12" y1="20" x2="12" y2="22.5"/>
+        <line x1="1.5" y1="12" x2="4" y2="12"/>
+        <line x1="20" y1="12" x2="22.5" y2="12"/>
+        <line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/>
+        <line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/>
+        <line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/>
+        <line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/>
+      </g>
+    </svg>
+    <svg class="icon-moon w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/>
+    </svg>
+  </button>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
