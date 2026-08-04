@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clock :: MicaelParise</title>
+  <link rel="icon" href="assets/img/icons8-clock-64.png" type="image/png">
+
+  <style>[x-cloak] { display: none !important; }</style>
+
+  <script>
+    (function () {
+      var salvo = localStorage.getItem('tema');
+      var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', escuro);
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            term: {
+              bg: 'var(--term-bg)',
+              alt: 'var(--term-bg-alt)',
+              fg: 'var(--term-fg)',
+              dim: 'var(--term-fg-dim)',
+              accent: 'var(--term-accent)',
+              border: 'var(--term-border)',
+              soft: 'var(--term-fg-soft)',
+              toggle: 'var(--term-toggle-bg)',
+            },
+          },
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <script src="../../assets/js/app.js" defer></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="relative min-h-screen overflow-x-hidden bg-term-bg text-term-fg font-mono">
+
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <main class="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center gap-10 px-5 py-14 lg:flex-row lg:items-center lg:justify-between lg:gap-10 lg:px-10">
+
+    <section class="flex flex-col items-center gap-4 text-center lg:items-start lg:text-left">
+      <div class="card-frame flex items-center gap-2 rounded-full border border-term-border bg-term-alt px-4 py-2">
+        <span id="icone-periodo" class="h-5 w-5 text-term-accent" aria-hidden="true"></span>
+        <span id="rotulo-periodo" class="text-sm font-semibold tracking-wide text-term-soft">Carregando</span>
+      </div>
+
+      <h1 class="text-3xl font-bold md:text-5xl">
+        <span id="saudacao">Olá</span>
+      </h1>
+
+      <p class="max-w-sm text-sm text-term-dim md:text-base">
+        Relógio ao vivo com saudação conforme o período do dia.
+      </p>
+    </section>
+
+    <section aria-label="Relógio" class="card-frame flex items-center gap-2 rounded-xl border border-term-border bg-term-alt p-4 sm:gap-3 sm:p-6">
+      <div class="flex flex-col items-center">
+        <span id="valor-horas" class="font-display text-glow text-3xl leading-none text-term-accent sm:text-5xl md:text-6xl lg:text-7xl">00</span>
+        <span class="mt-2 text-[10px] font-semibold uppercase tracking-widest text-term-dim sm:text-xs">Horas</span>
+      </div>
+
+      <span class="separador-relogio font-display text-glow text-3xl text-term-accent sm:text-5xl md:text-6xl lg:text-7xl" aria-hidden="true">:</span>
+
+      <div class="flex flex-col items-center">
+        <span id="valor-minutos" class="font-display text-glow text-3xl leading-none text-term-accent sm:text-5xl md:text-6xl lg:text-7xl">00</span>
+        <span class="mt-2 text-[10px] font-semibold uppercase tracking-widest text-term-dim sm:text-xs">Minutos</span>
+      </div>
+
+      <span class="separador-relogio font-display text-glow text-3xl text-term-accent sm:text-5xl md:text-6xl lg:text-7xl" aria-hidden="true">:</span>
+
+      <div class="flex flex-col items-center">
+        <span id="valor-segundos" class="font-display text-glow text-3xl leading-none text-term-accent sm:text-5xl md:text-6xl lg:text-7xl">00</span>
+        <span class="mt-2 text-[10px] font-semibold uppercase tracking-widest text-term-dim sm:text-xs">Segundos</span>
+      </div>
+    </section>
+
+  </main>
+
+  <a href="../../index.html" aria-label="Voltar para o hub de projetos" class="fixed bottom-6 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
+  </a>
+
+  <button
+    type="button"
+    x-data="themeToggle()"
+    x-on:click="toggle()"
+    class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
+    aria-label="Alternar entre tema claro e escuro"
+  >
+    <svg class="icon-sun w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4.5"/>
+      <line x1="12" y1="1.5" x2="12" y2="4"/>
+      <line x1="12" y1="20" x2="12" y2="22.5"/>
+      <line x1="1.5" y1="12" x2="4" y2="12"/>
+      <line x1="20" y1="12" x2="22.5" y2="12"/>
+      <line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/>
+      <line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/>
+      <line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/>
+      <line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/>
+    </svg>
+    <svg class="icon-moon w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/>
+    </svg>
+  </button>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

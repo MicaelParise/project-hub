@@ -1,0 +1,9 @@
+@keyframes piscar {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0.25; }
+  100% { opacity: 1; }
+}
+
+.separador-relogio {
+  animation: piscar 2s steps(1, end) infinite;
+}
