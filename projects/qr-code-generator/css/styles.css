@@ -1,0 +1,34 @@
+[x-cloak] {
+  display: none !important;
+}
+
+/* Bloqueia transições e animações até a página terminar de carregar,
+   evitando a piscada causada pela injeção assíncrona do Tailwind via CDN */
+.preload,
+.preload * {
+  transition: none !important;
+  animation: none !important;
+}
+
+input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border-radius: 0.65rem;
+  border: 2px solid var(--term-border);
+}
+
+input[type="color"]::-moz-color-swatch {
+  border-radius: 0.65rem;
+  border: 2px solid var(--term-border);
+}
