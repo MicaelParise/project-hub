@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Binary Translator :: MicaelParise</title>
+
+    <style>[x-cloak] { display: none !important; }</style>
+
+    <script>
+      (function () {
+        var salvo = localStorage.getItem('tema');
+        var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark', escuro);
+      })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              term: {
+                bg: 'var(--term-bg)',
+                alt: 'var(--term-bg-alt)',
+                fg: 'var(--term-fg)',
+                dim: 'var(--term-fg-dim)',
+                accent: 'var(--term-accent)',
+                border: 'var(--term-border)',
+                soft: 'var(--term-fg-soft)',
+                toggle: 'var(--term-toggle-bg)',
+              },
+            },
+            fontFamily: {
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+              display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
+
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <link rel="stylesheet" href="css/styles.css" />
+
+    <script src="../../assets/js/app.js" defer></script>
+    <script src="js/app.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  </head>
+  <body class="min-h-screen overflow-x-hidden bg-term-bg text-term-fg font-mono transition-colors duration-300">
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <div class="flex min-h-screen flex-col items-center justify-center px-4 py-10 sm:py-16">
+      <header class="mb-8 text-center">
+        <h1 class="font-display text-3xl tracking-tight text-term-accent text-glow sm:text-4xl">Binary Translator</h1>
+        <p class="mt-2 text-sm text-term-dim sm:text-base">
+          Converta texto em binário e binário em texto, instantaneamente.
+        </p>
+      </header>
+
+      <main
+        x-data="converterApp()"
+        x-cloak
+        class="card-frame w-full max-w-4xl rounded-2xl border border-term-border bg-term-alt p-4 sm:p-8"
+      >
+        <div class="mb-6 flex justify-center">
+          <div class="grid w-full max-w-sm grid-cols-2 gap-1 rounded-full border border-term-border bg-term-bg p-1">
+            <button
+              @click="setMode('textToBinary')"
+              :class="mode === 'textToBinary' ? 'bg-term-accent text-term-bg shadow' : 'text-term-dim'"
+              class="rounded-full px-3 py-2 text-center text-xs font-semibold transition-colors duration-200 sm:text-sm"
+            >
+              Texto → Binário
+            </button>
+            <button
+              @click="setMode('binaryToText')"
+              :class="mode === 'binaryToText' ? 'bg-term-accent text-term-bg shadow' : 'text-term-dim'"
+              class="rounded-full px-3 py-2 text-center text-xs font-semibold transition-colors duration-200 sm:text-sm"
+            >
+              Binário → Texto
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
+          <div class="flex flex-col">
+            <label class="mb-1 text-xs font-medium tracking-wide text-term-dim uppercase" x-text="inputLabel"></label>
+            <textarea
+              x-model="input"
+              @input="convert()"
+              :placeholder="inputPlaceholder"
+              rows="6"
+              class="w-full resize-none rounded-xl border border-term-border bg-term-bg p-3 text-sm text-term-fg focus:ring-2 focus:ring-term-accent focus:outline-none"
+            ></textarea>
+          </div>
+
+          <div class="flex justify-center md:flex-col">
+            <button
+              @click="swap()"
+              title="Inverter direção"
+              class="grid h-10 w-10 rotate-90 place-items-center rounded-full border border-term-border bg-term-bg text-term-fg transition-colors duration-200 hover:bg-term-accent hover:text-term-bg md:rotate-0"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 16V4M7 4L3 8M7 4l4 4" />
+                <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="flex flex-col">
+            <div class="mb-1 flex items-center justify-between">
+              <label class="text-xs font-medium tracking-wide text-term-dim uppercase" x-text="outputLabel"></label>
+              <button @click="copyOutput()" class="text-xs font-medium text-term-accent hover:text-glow" x-text="copied ? 'Copiado!' : 'Copiar'"></button>
+            </div>
+            <textarea
+              :value="output"
+              readonly
+              :placeholder="outputPlaceholder"
+              rows="6"
+              class="w-full resize-none rounded-xl border border-term-border bg-term-bg p-3 text-sm text-term-dim focus:outline-none"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-center">
+          <button
+            @click="clear()"
+            class="rounded-full border border-term-border px-6 py-2 text-sm font-semibold text-term-dim transition-colors duration-200 hover:border-term-accent hover:text-term-accent"
+          >
+            Limpar
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <a
+      href="../../index.html"
+      aria-label="Voltar para o hub de projetos"
+      class="fixed bottom-6 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors"
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 11.5 12 4l9 7.5"/>
+        <path d="M5 9.5V20h14V9.5"/>
+        <path d="M9.5 20v-6h5v6"/>
+      </svg>
+    </a>
+
+    <button
+      type="button"
+      x-data="themeToggle()"
+      x-on:click="toggle()"
+      class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
+      aria-label="Alternar entre tema claro e escuro"
+    >
+      <svg class="icon-sun w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/>
+        <g stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <line x1="12" y1="1.5" x2="12" y2="4"/>
+          <line x1="12" y1="20" x2="12" y2="22.5"/>
+          <line x1="1.5" y1="12" x2="4" y2="12"/>
+          <line x1="20" y1="12" x2="22.5" y2="12"/>
+          <line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/>
+          <line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/>
+          <line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/>
+          <line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/>
+        </g>
+      </svg>
+      <svg class="icon-moon w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/>
+      </svg>
+    </button>
+  </body>
+</html>
