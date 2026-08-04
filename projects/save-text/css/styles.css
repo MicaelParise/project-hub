@@ -1,0 +1,14 @@
+textarea::selection,
+input::selection {
+  background-color: var(--term-accent);
+  color: var(--term-bg);
+}
+
+textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background-color: var(--term-accent);
+  border-radius: 999px;
+}

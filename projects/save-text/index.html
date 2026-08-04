@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Save Text :: MicaelParise</title>
+
+    <style>[x-cloak] { display: none !important; }</style>
+
+    <script>
+      (function () {
+        var salvo = localStorage.getItem('tema');
+        var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark', escuro);
+      })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              term: {
+                bg: 'var(--term-bg)',
+                alt: 'var(--term-bg-alt)',
+                fg: 'var(--term-fg)',
+                dim: 'var(--term-fg-dim)',
+                accent: 'var(--term-accent)',
+                border: 'var(--term-border)',
+                soft: 'var(--term-fg-soft)',
+                toggle: 'var(--term-toggle-bg)',
+              },
+            },
+            fontFamily: {
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+              display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
+
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <link rel="stylesheet" href="css/styles.css" />
+
+    <script src="../../assets/js/app.js" defer></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  </head>
+  <body
+    x-data="salvarTexto()"
+    x-cloak
+    class="bg-term-bg text-term-fg font-mono min-h-screen antialiased"
+  >
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <main class="mx-auto flex min-h-screen max-w-5xl flex-col justify-center gap-10 px-5 py-10 md:flex-row md:items-center md:gap-14 md:px-8">
+      <section class="md:w-2/5">
+        <span class="inline-flex items-center gap-2 rounded-full border border-term-border bg-term-alt px-3 py-1 text-xs font-medium text-term-accent">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 17v-6M9 12l3-3 3 3" />
+            <path d="M20.5 15.5A6.5 6.5 0 0 0 15 5.5a5 5 0 0 0-9.8 1.4A4.5 4.5 0 0 0 6.5 15.5" />
+          </svg>
+          Sem instalação, sem servidor, na web
+        </span>
+
+        <p class="mt-6 text-term-dim text-sm">visitante@micaelparise:~$ save-text</p>
+        <h1 class="font-display text-3xl leading-tight md:text-4xl mt-2 text-term-accent text-glow">
+          Salve qualquer texto direto no seu computador<span class="cursor-blink" aria-hidden="true">&nbsp;</span>
+        </h1>
+        <p class="mt-3 text-term-soft">
+          Escreva ou cole o conteúdo, escolha o formato do arquivo e baixe tudo em um clique.
+          Nenhum dado sai do seu navegador.
+        </p>
+
+        <ul class="mt-6 hidden flex-wrap gap-2 md:flex">
+          <template x-for="item in formatos" :key="item.mime">
+            <li
+              class="rounded-lg border px-2.5 py-1 text-xs font-medium transition"
+              :class="item.mime === formato
+                ? 'border-term-accent bg-term-accent text-term-bg'
+                : 'border-term-border bg-term-alt text-term-dim'"
+              x-text="'.' + item.extensao"
+            ></li>
+          </template>
+        </ul>
+      </section>
+
+      <section class="md:w-3/5">
+        <div class="card-frame border border-term-border bg-term-alt rounded-xl p-5 shadow-xl sm:p-7">
+          <label class="mb-2 block text-sm font-medium text-term-dim">Conteúdo</label>
+          <textarea
+            x-model="conteudo"
+            spellcheck="false"
+            placeholder="Digite algo para salvar"
+            class="h-56 w-full resize-none font-mono text-term-fg bg-term-alt border border-term-border rounded-xl p-3.5 text-[15px] leading-relaxed outline-none transition focus:border-term-accent"
+          ></textarea>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="mb-2 block text-sm font-medium text-term-dim">Nome do arquivo</label>
+              <input
+                x-model="nomeArquivo"
+                type="text"
+                spellcheck="false"
+                placeholder="meu-arquivo"
+                class="h-12 w-full rounded-xl border border-term-border bg-term-bg px-3.5 text-[15px] font-mono text-term-fg outline-none transition focus:border-term-accent"
+              />
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-medium text-term-dim">Salvar como</label>
+              <select
+                x-model="formato"
+                class="h-12 w-full rounded-xl border border-term-border bg-term-bg px-3.5 text-[15px] font-mono text-term-fg outline-none transition focus:border-term-accent"
+              >
+                <template x-for="item in formatos" :key="item.mime">
+                  <option :value="item.mime" x-text="item.rotulo"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            @click="salvar()"
+            :disabled="!podeSalvar"
+            :class="podeSalvar
+              ? 'bg-term-accent text-term-bg hover:text-glow cursor-pointer opacity-100'
+              : 'bg-term-accent text-term-bg cursor-not-allowed opacity-50'"
+            class="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-medium font-mono shadow-lg transition"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v12M7 10l5 5 5-5" />
+              <path d="M5 21h14" />
+            </svg>
+            <span x-text="`Salvar como .${formatoAtual.extensao}`"></span>
+          </button>
+
+          <p
+            x-cloak
+            x-show="mostrarAviso"
+            x-transition
+            class="mt-4 flex items-center gap-2 rounded-xl border border-term-accent bg-term-alt px-3.5 py-2.5 text-sm font-medium text-term-accent"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+            Arquivo salvo com sucesso.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- VOLTAR AO HUB -->
+    <a
+      href="../../index.html"
+      aria-label="Voltar para o hub de projetos"
+      class="fixed bottom-6 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors"
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
+    </a>
+
+    <!-- TOGGLE DE TEMA -->
+    <button
+      type="button"
+      x-data="themeToggle()"
+      x-on:click="toggle()"
+      class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
+      aria-label="Alternar entre tema claro e escuro"
+    >
+      <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/><line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/><line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/><line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/></g></svg>
+      <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></svg>
+    </button>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>
