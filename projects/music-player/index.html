@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Music Player :: MicaelParise</title>
+
+  <!-- agora suporta tema claro/escuro (compartilhado com o hub via localStorage['tema']);
+       nao restringe mais o navegador a um unico tema -->
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0a0e0a">
+
+  <!-- esconde qualquer coisa controlada pelo Alpine ate ele inicializar -->
+  <style>[x-cloak] { display: none !important; }</style>
+
+  <!-- resolve o tema de forma sincrona, antes de qualquer pintura, evitando FOUC -->
+  <script>
+    (function () {
+      var salvo = localStorage.getItem('tema');
+      var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', escuro);
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+  <!-- favicons -->
+  <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="manifest" href="assets/icons/site.webmanifest">
+
+  <!-- tailwind (via cdn, sem build/instalacao) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            term: {
+              bg: 'var(--term-bg)',
+              alt: 'var(--term-bg-alt)',
+              fg: 'var(--term-fg)',
+              dim: 'var(--term-fg-dim)',
+              accent: 'var(--term-accent)',
+              border: 'var(--term-border)',
+              soft: 'var(--term-fg-soft)',
+              toggle: 'var(--term-toggle-bg)',
+            },
+          },
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- app.js precisa carregar antes do Alpine para registrar o listener de 'alpine:init' a tempo -->
+  <script src="../../assets/js/app.js" defer></script>
+
+  <!-- alpine.js (via cdn) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="h-screen w-screen overflow-hidden antialiased bg-term-bg text-term-fg font-mono">
+
+<div class="scanlines" aria-hidden="true"></div>
+
+  <div x-data="musicPlayer()" x-init="init()" class="flex h-full w-full flex-col lg:flex-row">
+
+    <!-- sidebar: lista de musicas -->
+    <!-- desktop (lg+): coluna fixa sempre visivel, ao lado do player -->
+    <!-- mobile/tablet: painel em tela cheia, aberto/fechado pelo botao de fila -->
+    <aside
+      class="w-full shrink-0 flex-col border-term-border bg-term-alt p-4 backdrop-blur lg:flex lg:w-80 lg:border-r lg:p-6 xl:w-96"
+      :class="showList ? 'fixed inset-0 z-30 flex' : 'hidden'"
+    >
+      <div class="mb-4 flex shrink-0 items-center justify-between">
+        <div class="flex items-center gap-2 text-term-fg">
+          <span class="material-icons text-term-accent">queue_music</span>
+          <span class="font-medium">Lista de músicas</span>
+        </div>
+
+        <button @click="showList = false" class="text-term-dim transition hover:text-term-accent lg:hidden">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <ul class="no-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+        <template x-for="(song, i) in songs" :key="i">
+          <li
+            @click="selectSong(i); showList = false"
+            class="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 transition"
+            :class="i === index ? 'bg-term-bg text-term-accent pointer-events-none' : 'text-term-dim hover:bg-term-bg hover:text-term-accent'"
+          >
+            <div class="min-w-0">
+              <p class="truncate text-sm" :class="i === index && 'font-semibold'" x-text="song.name"></p>
+              <p class="truncate text-xs text-term-dim" x-text="song.artist"></p>
+            </div>
+
+            <span class="shrink-0 text-xs text-term-dim" x-text="i === index ? 'Tocando' : (durations[i] || '--:--')"></span>
+          </li>
+        </template>
+      </ul>
+    </aside>
+
+    <!-- player principal -->
+    <main class="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-5 overflow-hidden p-6 lg:gap-6 lg:p-12">
+
+      <!-- info -->
+      <button @click="showInfo = !showInfo" class="absolute right-5 top-5 text-term-dim transition hover:text-term-accent" title="Sobre">
+        <span class="material-icons text-xl">info</span>
+      </button>
+
+      <div
+        x-show="showInfo"
+        x-transition
+        x-cloak
+        class="card-frame absolute right-5 top-14 w-64 max-w-[80vw] rounded-xl border border-term-border bg-term-alt p-3 text-xs text-term-dim backdrop-blur"
+      >
+        Feito com <span class="text-term-accent">&#9829;</span> para ouvir suas músicas favoritas.
+      </div>
+
+      <span class="shrink-0 text-xs font-medium uppercase tracking-widest text-term-accent">Tocando agora</span>
+
+      <!-- capa da musica -->
+      <div class="card-frame aspect-square w-[min(70vw,42vh,26rem)] shrink-0 overflow-hidden rounded-3xl border border-term-border bg-term-alt shadow-2xl">
+        <img :src="imgSrc" @error="onImgError($event)" alt="Capa da música" class="h-full w-full object-cover">
+      </div>
+
+      <!-- nome / artista -->
+      <div class="card-frame w-full max-w-md shrink-0 border border-term-border bg-term-alt rounded-xl px-4 py-3 text-center">
+        <p class="truncate text-xl font-semibold lg:text-2xl" x-text="current.name"></p>
+        <p class="mt-1 truncate text-sm text-term-dim lg:text-base" x-text="current.artist"></p>
+      </div>
+
+      <!-- audio real (invisivel) -->
+      <audio
+        x-ref="audio"
+        @timeupdate="currentTime = $refs.audio.currentTime"
+        @loadedmetadata="duration = $refs.audio.duration"
+        @play="playing = true"
+        @pause="playing = false"
+        @ended="onEnded()"
+        class="hidden"
+      ></audio>
+
+      <!-- barra de progresso -->
+      <div class="w-full max-w-md shrink-0">
+        <div @click="seek($event)" class="group relative h-1.5 cursor-pointer rounded-full bg-term-alt">
+          <div class="h-full rounded-full bg-term-accent" :style="`width:${progressPercent}%`"></div>
+          <div
+            class="absolute top-1/2 h-3 w-3 -translate-y-1/2 scale-0 rounded-full bg-term-fg shadow transition group-hover:scale-100"
+            :style="`left:calc(${progressPercent}% - 6px)`"
+          ></div>
+        </div>
+
+        <div class="mt-2 flex justify-between text-xs text-term-dim">
+          <span x-text="formatTime(currentTime)"></span>
+          <span x-text="formatTime(duration)"></span>
+        </div>
+      </div>
+
+      <!-- controles -->
+      <div class="card-frame flex w-full max-w-md shrink-0 items-center justify-between border border-term-border bg-term-alt rounded-xl px-4 py-3">
+        <button @click="cycleRepeat()" :title="repeatTitle" class="text-term-dim transition hover:text-term-accent">
+          <span class="material-icons text-2xl" x-text="repeatMode"></span>
+        </button>
+
+        <button @click="prev()" class="text-term-fg transition hover:text-term-accent">
+          <span class="material-icons text-4xl">skip_previous</span>
+        </button>
+
+        <button
+          @click="togglePlay()"
+          class="flex h-14 w-14 items-center justify-center rounded-full bg-term-accent text-term-bg shadow-lg transition hover:brightness-110 active:scale-95"
+        >
+          <span class="material-icons text-3xl" x-text="playing ? 'pause' : 'play_arrow'"></span>
+        </button>
+
+        <button @click="next()" class="text-term-fg transition hover:text-term-accent">
+          <span class="material-icons text-4xl">skip_next</span>
+        </button>
+
+        <button @click="showList = !showList" class="text-term-dim transition hover:text-term-accent lg:invisible lg:pointer-events-none">
+          <span class="material-icons text-2xl">queue_music</span>
+        </button>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- voltar para o hub -->
+  <a href="../../index.html" aria-label="Voltar para o hub de projetos"
+     class="fixed bottom-8 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
+  </a>
+
+  <!-- toggle de tema -->
+  <button
+    type="button"
+    x-data="themeToggle()"
+    x-on:click="toggle()"
+    class="theme-toggle fixed bottom-8 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
+    aria-label="Alternar entre tema claro e escuro"
+  >
+    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+      <circle cx="12" cy="12" r="4.5"/>
+      <g stroke-linecap="round">
+        <line x1="12" y1="1.5" x2="12" y2="4"/>
+        <line x1="12" y1="20" x2="12" y2="22.5"/>
+        <line x1="1.5" y1="12" x2="4" y2="12"/>
+        <line x1="20" y1="12" x2="22.5" y2="12"/>
+        <line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/>
+        <line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/>
+        <line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/>
+        <line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/>
+      </g>
+    </svg>
+    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/>
+    </svg>
+  </button>
+
+  <script src="assets/js/songs.js"></script>
+  <script src="assets/js/player.js"></script>
+
+</body>
+</html>
