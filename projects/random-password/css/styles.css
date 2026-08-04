@@ -1,0 +1,9 @@
+html, body {
+  overflow-x: hidden;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--term-accent) 8%, transparent), transparent 40%),
+    radial-gradient(circle at 85% 80%, color-mix(in srgb, var(--term-accent) 6%, transparent), transparent 40%);
+}
