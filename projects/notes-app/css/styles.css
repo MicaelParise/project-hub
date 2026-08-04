@@ -1,0 +1,11 @@
+/* Scrollbar fina para a descrição das notas, já que o Tailwind via CDN não traz utilitários para isso */
+.note-desc::-webkit-scrollbar {
+  width: 5px;
+}
+.note-desc::-webkit-scrollbar-track {
+  background: transparent;
+}
+.note-desc::-webkit-scrollbar-thumb {
+  background: var(--term-border);
+  border-radius: 9999px;
+}
