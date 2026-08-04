@@ -1,0 +1,8 @@
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background-color: var(--term-accent);
+  color: var(--term-bg);
+}
