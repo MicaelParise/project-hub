@@ -1,309 +1,265 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Notes App :: MicaelParise</title>
-    <meta name="description" content="Um bloco de notas simples que salva tudo no seu navegador." />
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notes App :: MicaelParise</title>
+  <meta name="description" content="Um bloco de notas simples que salva tudo no seu navegador.">
 
-    <style>[x-cloak]{display:none!important}</style>
+  <!-- tema salvo aplicado antes da primeira pintura (sincrono, evita flash) -->
+  <script src="../../assets/js/tema.js"></script>
 
-    <script>
-      (function () {
-        var salvo = localStorage.getItem('tema');
-        var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.classList.toggle('dark', escuro);
-      })();
-    </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script src="../../assets/js/tailwind-tema.js"></script>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              term: {
-                bg: 'var(--term-bg)',
-                alt: 'var(--term-bg-alt)',
-                fg: 'var(--term-fg)',
-                dim: 'var(--term-fg-dim)',
-                accent: 'var(--term-accent)',
-                border: 'var(--term-border)',
-                soft: 'var(--term-fg-soft)',
-                toggle: 'var(--term-toggle-bg)',
-              },
-            },
-            fontFamily: {
-              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-              display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
-            },
-          },
-        },
-      };
-    </script>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <link rel="stylesheet" href="css/styles.css">
 
-    <link rel="stylesheet" href="../../assets/css/style.css" />
-    <link rel="stylesheet" href="css/styles.css" />
+  <!-- scripts com defer executam em ordem: compartilhado, projeto e por ultimo o Alpine -->
+  <script src="../../assets/js/app.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
+</head>
+<body
+  x-data="notasApp()"
+  :class="{ 'overflow-hidden': modalAberto || confirmExcluirId !== null }"
+  @keydown.escape.window="fecharModal(); cancelarExclusao()"
+  class="min-h-screen bg-term-bg text-term-fg font-mono antialiased"
+>
+  <div class="scanlines" aria-hidden="true"></div>
 
-    <script src="../../assets/js/app.js" defer></script>
-    <script src="js/app.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-  </head>
+  <div class="lg:flex lg:min-h-screen">
+    <!-- Sidebar (desktop) -->
+    <aside class="card-frame hidden rounded-xl border border-term-border bg-term-alt p-8 lg:sticky lg:top-6 lg:m-6 lg:flex lg:h-[calc(100vh-3rem)] lg:w-72 lg:shrink-0 lg:flex-col">
+      <div class="flex items-center gap-3">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-term-accent text-term-bg shadow-md">
+          <!-- heroicons: document-text -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+          </svg>
+        </span>
+        <div>
+          <h1 class="font-display text-xl text-term-accent text-glow">Notes App</h1>
+          <p class="text-xs text-term-dim">Seu bloco pessoal</p>
+        </div>
+      </div>
 
-  <body
-    x-data="notasApp()"
-    :class="{ 'overflow-hidden': modalAberto }"
-    @keydown.escape.window="fecharModal(); cancelarExclusao()"
-    class="min-h-screen bg-term-bg text-term-fg font-mono antialiased"
-  >
-    <div class="scanlines" aria-hidden="true"></div>
+      <button
+        type="button"
+        @click="abrirNovo()"
+        class="mt-8 inline-flex items-center justify-center gap-2 rounded-xl border border-term-accent bg-term-accent py-2.5 font-medium text-term-bg shadow-md transition-colors hover:bg-term-accent/90"
+      >
+        <!-- heroicons: plus -->
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Nova nota
+      </button>
 
-    <div class="lg:flex lg:min-h-screen">
-      <!-- Sidebar (desktop) -->
-      <aside class="hidden lg:flex lg:w-72 lg:shrink-0 lg:flex-col card-frame border border-term-border bg-term-alt rounded-xl p-8">
-        <div class="flex items-center gap-3">
-          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-term-accent text-term-bg shadow-md">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
-              <rect x="4" y="3" width="16" height="18" rx="2" />
-              <path d="M8 8h8M8 12h8M8 16h5" />
+      <p class="mt-8 text-sm text-term-dim" x-text="notas.length + (notas.length === 1 ? ' nota salva' : ' notas salvas')"></p>
+
+      <p class="mt-auto text-xs text-term-dim">Salvo automaticamente neste navegador</p>
+    </aside>
+
+    <!-- Conteúdo principal -->
+    <div class="flex flex-1 flex-col">
+      <!-- Barra superior (mobile) -->
+      <header class="flex items-center justify-between border-b border-term-border px-5 py-4 lg:hidden">
+        <div class="flex items-center gap-2.5">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-term-accent text-term-bg shadow-md">
+            <!-- heroicons: document-text -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
             </svg>
           </span>
-          <div>
-            <h1 class="text-lg font-semibold">Notes App</h1>
-            <p class="text-xs text-term-dim">Seu bloco pessoal</p>
-          </div>
+          <h1 class="font-display text-lg text-term-accent text-glow">Notes App</h1>
+        </div>
+        <span class="rounded-full border border-term-border bg-term-alt px-3 py-1 text-xs font-medium text-term-dim" x-text="notas.length" aria-label="Quantidade de notas"></span>
+      </header>
+
+      <main class="flex-1 px-5 pb-28 pt-6 sm:px-8 sm:pt-8 lg:px-10 lg:py-10">
+        <!-- Estado vazio -->
+        <div x-show="notas.length === 0" x-cloak class="flex flex-col items-center justify-center py-20 text-center">
+          <!-- heroicons: document-text -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-14 w-14 text-term-dim" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+          </svg>
+          <p class="mt-4 font-medium text-term-dim">Nenhuma nota por aqui ainda</p>
+          <p class="mt-1 text-sm text-term-dim">Crie a primeira nota para começar</p>
+          <button
+            type="button"
+            @click="abrirNovo()"
+            class="mt-6 inline-flex items-center gap-2 rounded-xl border border-term-accent bg-term-accent px-5 py-2.5 font-medium text-term-bg shadow-md transition-colors hover:bg-term-accent/90"
+          >
+            <!-- heroicons: plus -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Criar nota
+          </button>
         </div>
 
-        <button
-          @click="abrirNovo()"
-          class="mt-8 inline-flex items-center justify-center gap-2 rounded-xl border border-term-accent bg-term-accent py-2.5 font-medium text-term-bg shadow-md transition-colors hover:bg-term-accent/90"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-5 w-5">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Nova nota
-        </button>
-
-        <p class="mt-8 text-sm text-term-dim" x-text="notas.length + (notas.length === 1 ? ' nota salva' : ' notas salvas')"></p>
-
-        <p class="mt-auto text-xs text-term-dim">Salvo automaticamente neste navegador</p>
-      </aside>
-
-      <!-- Conteúdo principal -->
-      <div class="flex flex-1 flex-col">
-        <!-- Barra superior (mobile) -->
-        <header class="flex items-center justify-between border-b border-term-border px-5 py-4 lg:hidden">
-          <div class="flex items-center gap-2.5">
-            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-term-accent text-term-bg shadow-md">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                <rect x="4" y="3" width="16" height="18" rx="2" />
-                <path d="M8 8h8M8 12h8M8 16h5" />
-              </svg>
-            </span>
-            <h1 class="text-base font-semibold">Notes App</h1>
-          </div>
-          <span class="rounded-full border border-term-border bg-term-alt px-3 py-1 text-xs font-medium text-term-dim" x-text="notas.length"></span>
-        </header>
-
-        <main class="flex-1 px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
-          <!-- Estado vazio -->
-          <div x-show="notas.length === 0" x-cloak class="flex flex-col items-center justify-center py-20 text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="h-14 w-14 text-term-dim">
-              <rect x="4" y="3" width="16" height="18" rx="2" />
-              <path d="M8 8h8M8 12h8M8 16h5" />
-            </svg>
-            <p class="mt-4 font-medium text-term-dim">Nenhuma nota por aqui ainda</p>
-            <p class="mt-1 text-sm text-term-dim">Crie a primeira nota para começar</p>
-            <button
-              @click="abrirNovo()"
-              class="mt-6 inline-flex items-center gap-2 rounded-xl border border-term-accent bg-term-accent px-5 py-2.5 font-medium text-term-bg shadow-md transition-colors hover:bg-term-accent/90"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-5 w-5">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              Criar nota
-            </button>
-          </div>
-
-          <!-- Grade de notas -->
-          <div x-show="notas.length > 0" x-cloak class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            <template x-for="nota in notas" :key="nota.id">
-              <article class="group card-frame flex flex-col rounded-xl border border-term-border bg-term-alt p-5 hover:border-term-accent">
-                <div class="flex items-start justify-between gap-2">
-                  <h2 class="line-clamp-1 font-semibold text-term-fg" x-text="nota.titulo || 'Sem título'"></h2>
-                  <div class="flex shrink-0 gap-1 opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100">
-                    <button
-                      @click="abrirEdicao(nota)"
-                      aria-label="Editar nota"
-                      class="rounded-lg p-1.5 text-term-dim transition-colors hover:text-term-accent"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                      </svg>
-                    </button>
-                    <button
-                      @click="pedirExclusao(nota.id)"
-                      aria-label="Excluir nota"
-                      class="rounded-lg p-1.5 text-term-dim transition-colors hover:text-term-accent"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                        <path d="M4 7h16M9 7V4h6v3m-8 0 1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" />
-                      </svg>
-                    </button>
-                  </div>
+        <!-- Grade de notas (mais recentes primeiro) -->
+        <div x-show="notas.length > 0" x-cloak class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <template x-for="nota in notasOrdenadas" :key="nota.id">
+            <article class="card-frame group flex flex-col rounded-xl border border-term-border bg-term-alt p-5">
+              <div class="flex items-start justify-between gap-2">
+                <h2 class="line-clamp-1 font-semibold text-term-fg" x-text="nota.titulo || 'Sem título'"></h2>
+                <div class="flex shrink-0 gap-1 opacity-100 transition-opacity lg:opacity-0 lg:focus-within:opacity-100 lg:group-hover:opacity-100">
+                  <button
+                    type="button"
+                    @click="abrirEdicao(nota)"
+                    aria-label="Editar nota"
+                    class="rounded-lg p-1.5 text-term-dim transition-colors hover:text-term-accent"
+                  >
+                    <!-- heroicons: pencil-square -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    @click="pedirExclusao(nota.id)"
+                    aria-label="Excluir nota"
+                    class="rounded-lg p-1.5 text-term-dim transition-colors hover:text-term-danger"
+                  >
+                    <!-- heroicons: trash -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                  </button>
                 </div>
-                <p class="note-desc mt-2 max-h-40 flex-1 overflow-y-auto whitespace-pre-line pr-1 text-sm text-term-dim" x-text="nota.descricao"></p>
-                <div class="mt-4 border-t border-term-border pt-3 text-xs text-term-dim" x-text="nota.data"></div>
-              </article>
-            </template>
-          </div>
-        </main>
-      </div>
+              </div>
+              <p class="note-desc mt-2 max-h-40 flex-1 overflow-y-auto whitespace-pre-line pr-1 text-sm text-term-dim" x-text="nota.descricao"></p>
+              <div class="mt-4 border-t border-term-border pt-3 text-xs text-term-dim" x-text="nota.data"></div>
+            </article>
+          </template>
+        </div>
+      </main>
     </div>
+  </div>
 
-    <!-- Botão flutuante de nova nota (mobile) -->
-    <button
-      @click="abrirNovo()"
-      aria-label="Nova nota"
-      class="fixed bottom-6 left-6 z-30 flex h-14 w-14 items-center justify-center rounded-2xl bg-term-accent text-term-bg shadow-lg transition-colors hover:bg-term-accent/90 lg:hidden"
+  <!-- Botão flutuante de nova nota (mobile) -->
+  <button
+    type="button"
+    @click="abrirNovo()"
+    aria-label="Nova nota"
+    class="fixed bottom-6 left-6 z-30 flex h-14 w-14 items-center justify-center rounded-2xl bg-term-accent text-term-bg shadow-lg transition-colors hover:bg-term-accent/90 lg:hidden"
+  >
+    <!-- heroicons: plus -->
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+  </button>
+
+  <!-- Modal de nota -->
+  <div x-show="modalAberto" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition.opacity>
+    <div class="absolute inset-0 bg-term-bg/60 backdrop-blur-sm" @click="fecharModal()"></div>
+
+    <div
+      x-show="modalAberto"
+      x-transition:enter="transition ease-out duration-200"
+      x-transition:enter-start="opacity-0 scale-95"
+      x-transition:enter-end="opacity-100 scale-100"
+      x-transition:leave="transition ease-in duration-150"
+      x-transition:leave-start="opacity-100 scale-100"
+      x-transition:leave-end="opacity-0 scale-95"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="titulo-modal"
+      class="card-frame relative w-full max-w-md rounded-xl border border-term-border bg-term-alt shadow-xl"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-6 w-6">
-        <path d="M12 5v14M5 12h14" />
-      </svg>
-    </button>
-
-    <!-- Voltar para o hub -->
-    <a
-      href="../../index.html"
-      aria-label="Voltar para o hub de projetos"
-      class="fixed bottom-6 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors"
-    >
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
-    </a>
-
-    <!-- Alternador de tema -->
-    <button
-      type="button"
-      x-data="themeToggle()"
-      x-on:click="toggle()"
-      class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
-      aria-label="Alternar entre tema claro e escuro"
-    >
-      <svg class="icon-sun w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="4.5"/>
-        <line x1="12" y1="1.5" x2="12" y2="4"/>
-        <line x1="12" y1="20" x2="12" y2="22.5"/>
-        <line x1="1.5" y1="12" x2="4" y2="12"/>
-        <line x1="20" y1="12" x2="22.5" y2="12"/>
-        <line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/>
-        <line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/>
-        <line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/>
-        <line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/>
-      </svg>
-      <svg class="icon-moon w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">
-        <path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/>
-      </svg>
-    </button>
-
-    <!-- Modal de nota -->
-    <div x-show="modalAberto" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition.opacity>
-      <div class="absolute inset-0 bg-term-bg/60 backdrop-blur-sm" @click="fecharModal()"></div>
-
-      <div
-        x-show="modalAberto"
-        x-cloak
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0 scale-95"
-        x-transition:enter-end="opacity-100 scale-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100 scale-100"
-        x-transition:leave-end="opacity-0 scale-95"
-        class="relative w-full max-w-md card-frame rounded-xl border border-term-border bg-term-alt shadow-xl"
-      >
-        <header class="flex items-center justify-between border-b border-term-border px-6 py-4">
-          <h2 class="text-lg font-semibold" x-text="notaEmEdicaoId === null ? 'Nova nota' : 'Editar nota'"></h2>
-          <button @click="fecharModal()" aria-label="Fechar" class="text-term-dim transition-colors hover:text-term-accent">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-5 w-5">
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-          </button>
-        </header>
-
-        <form @submit.prevent="salvar()" class="space-y-4 px-6 py-5">
-          <div>
-            <label class="mb-1.5 block text-sm font-medium" for="campo-titulo">Título</label>
-            <input
-              id="campo-titulo"
-              x-ref="campoTitulo"
-              x-model="form.titulo"
-              type="text"
-              autocomplete="off"
-              spellcheck="false"
-              class="w-full rounded-xl border border-term-border bg-term-bg px-4 py-2.5 text-sm text-term-fg transition-colors focus:border-term-accent focus:outline-none"
-            />
-          </div>
-          <div>
-            <label class="mb-1.5 block text-sm font-medium" for="campo-descricao">Descrição</label>
-            <textarea
-              id="campo-descricao"
-              x-model="form.descricao"
-              rows="5"
-              spellcheck="false"
-              class="w-full resize-none rounded-xl border border-term-border bg-term-bg px-4 py-2.5 text-sm text-term-fg transition-colors focus:border-term-accent focus:outline-none"
-            ></textarea>
-          </div>
-          <button
-            type="submit"
-            class="w-full rounded-xl border border-term-accent bg-term-accent py-2.5 font-medium text-term-bg shadow-md transition-colors hover:bg-term-accent/90"
-            x-text="notaEmEdicaoId === null ? 'Adicionar nota' : 'Salvar alterações'"
-          ></button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal de confirmação de exclusão -->
-    <div x-show="confirmExcluirId !== null" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition.opacity>
-      <div class="absolute inset-0 bg-term-bg/60 backdrop-blur-sm" @click="cancelarExclusao()"></div>
-
-      <div
-        x-show="confirmExcluirId !== null"
-        x-cloak
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0 scale-95"
-        x-transition:enter-end="opacity-100 scale-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100 scale-100"
-        x-transition:leave-end="opacity-0 scale-95"
-        class="relative w-full max-w-sm card-frame rounded-xl border border-term-border bg-term-alt p-6 shadow-xl"
-      >
-        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-term-accent/10 text-term-accent">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6">
-            <path d="M4 7h16M9 7V4h6v3m-8 0 1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13" />
+      <header class="flex items-center justify-between border-b border-term-border px-6 py-4">
+        <h2 id="titulo-modal" class="text-lg font-semibold" x-text="notaEmEdicaoId === null ? 'Nova nota' : 'Editar nota'"></h2>
+        <button type="button" @click="fecharModal()" aria-label="Fechar" class="text-term-dim transition-colors hover:text-term-accent">
+          <!-- heroicons: x-mark -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
-        </div>
-        <h2 class="mt-4 text-lg font-semibold">Excluir nota?</h2>
-        <p class="mt-1.5 text-sm text-term-dim">Essa ação não pode ser desfeita. A nota será removida permanentemente.</p>
+        </button>
+      </header>
 
-        <div class="mt-6 flex gap-3">
-          <button
-            @click="cancelarExclusao()"
-            class="flex-1 rounded-xl border border-term-border py-2.5 font-medium text-term-dim transition-colors hover:border-term-accent hover:text-term-accent"
+      <form @submit.prevent="salvar()" class="space-y-4 px-6 py-5">
+        <div>
+          <label class="mb-1.5 block text-sm font-medium" for="campo-titulo">Título</label>
+          <input
+            id="campo-titulo"
+            x-ref="campoTitulo"
+            x-model="form.titulo"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="120"
+            class="w-full rounded-xl border border-term-border bg-term-bg px-4 py-2.5 text-sm text-term-fg transition-colors focus:border-term-accent focus:outline-none"
           >
-            Cancelar
-          </button>
-          <button
-            @click="confirmarExclusao()"
-            class="flex-1 rounded-xl border border-term-border py-2.5 font-medium text-term-dim transition-colors hover:border-term-accent hover:text-term-accent"
-          >
-            Excluir
-          </button>
         </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium" for="campo-descricao">Descrição</label>
+          <textarea
+            id="campo-descricao"
+            x-model="form.descricao"
+            rows="5"
+            spellcheck="false"
+            class="w-full resize-none rounded-xl border border-term-border bg-term-bg px-4 py-2.5 text-sm text-term-fg transition-colors focus:border-term-accent focus:outline-none"
+          ></textarea>
+        </div>
+        <button
+          type="submit"
+          :disabled="!form.titulo.trim() && !form.descricao.trim()"
+          class="w-full rounded-xl border border-term-accent bg-term-accent py-2.5 font-medium text-term-bg shadow-md transition-colors hover:bg-term-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
+          x-text="notaEmEdicaoId === null ? 'Adicionar nota' : 'Salvar alterações'"
+        ></button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de confirmação de exclusão -->
+  <div x-show="confirmExcluirId !== null" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition.opacity>
+    <div class="absolute inset-0 bg-term-bg/60 backdrop-blur-sm" @click="cancelarExclusao()"></div>
+
+    <div
+      x-show="confirmExcluirId !== null"
+      x-transition:enter="transition ease-out duration-200"
+      x-transition:enter-start="opacity-0 scale-95"
+      x-transition:enter-end="opacity-100 scale-100"
+      x-transition:leave="transition ease-in duration-150"
+      x-transition:leave-start="opacity-100 scale-100"
+      x-transition:leave-end="opacity-0 scale-95"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="titulo-exclusao"
+      class="card-frame relative w-full max-w-sm rounded-xl border border-term-border bg-term-alt p-6 shadow-xl"
+    >
+      <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-term-danger/10 text-term-danger">
+        <!-- heroicons: trash -->
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+        </svg>
+      </div>
+      <h2 id="titulo-exclusao" class="mt-4 text-lg font-semibold">Excluir nota?</h2>
+      <p class="mt-1.5 text-sm text-term-dim">Essa ação não pode ser desfeita. A nota será removida permanentemente.</p>
+
+      <div class="mt-6 flex gap-3">
+        <button
+          type="button"
+          @click="cancelarExclusao()"
+          class="flex-1 rounded-xl border border-term-border py-2.5 font-medium text-term-dim transition-colors hover:border-term-accent hover:text-term-accent"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          @click="confirmarExclusao()"
+          class="flex-1 rounded-xl border border-term-danger/40 py-2.5 font-medium text-term-danger transition-colors hover:bg-term-danger/10"
+        >
+          Excluir
+        </button>
       </div>
     </div>
-  </body>
+  </div>
+</body>
 </html>

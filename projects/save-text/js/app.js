@@ -1,3 +1,6 @@
+// caracteres invalidos em nomes de arquivo no Windows/macOS/Linux
+const CARACTERES_PROIBIDOS = /[\\/:*?"<>|]+/g;
+
 function salvarTexto() {
   return {
     conteudo:
@@ -5,6 +8,7 @@ function salvarTexto() {
     nomeArquivo: "",
     formato: "text/plain",
     mostrarAviso: false,
+    timeoutAviso: null,
     formatos: [
       { mime: "text/plain", rotulo: "Texto (.txt)", extensao: "txt" },
       { mime: "text/javascript", rotulo: "JavaScript (.js)", extensao: "js" },
@@ -26,8 +30,8 @@ function salvarTexto() {
       if (!this.podeSalvar) return;
 
       const extensao = this.formatoAtual.extensao;
-      const nomeBase = this.nomeArquivo.trim() || "documento";
-      const nomeFinal = nomeBase.endsWith(`.${extensao}`) ? nomeBase : `${nomeBase}.${extensao}`;
+      const nomeBase = this.nomeArquivo.replace(CARACTERES_PROIBIDOS, "-").trim() || "documento";
+      const nomeFinal = nomeBase.toLowerCase().endsWith(`.${extensao}`) ? nomeBase : `${nomeBase}.${extensao}`;
 
       const blob = new Blob([this.conteudo], { type: this.formato });
       const url = URL.createObjectURL(blob);
@@ -37,10 +41,12 @@ function salvarTexto() {
       link.download = nomeFinal;
       link.click();
 
-      URL.revokeObjectURL(url);
+      // revogar na hora pode cancelar o download em alguns navegadores
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
 
       this.mostrarAviso = true;
-      setTimeout(() => (this.mostrarAviso = false), 2500);
+      clearTimeout(this.timeoutAviso);
+      this.timeoutAviso = setTimeout(() => (this.mostrarAviso = false), 2500);
     },
   };
 }

@@ -1,6 +1,8 @@
-/* Efeitos que os utilitarios do Tailwind nao cobrem: scanlines, glow, cursor e scrollbar */
+/* Tema "terminal" compartilhado por todas as paginas (hub + projetos).
+   Aqui ficam os tokens de cor e os efeitos que os utilitarios do Tailwind
+   nao cobrem: scanlines, glow, cursor, scrollbar e os botoes flutuantes. */
 
-/* tokens de tema compartilhados por todas as paginas (hub + projetos) */
+/* tokens de tema — claro (padrao) */
 :root {
   --term-bg: #eae7df;
   --term-bg-alt: #dcd8cd;
@@ -10,7 +12,11 @@
   --term-border: #006b274d;
   --term-fg-soft: #3a4038;
   --term-toggle-bg: #eae7dfcc;
+  --term-danger: #b42318;
+  color-scheme: light;
 }
+
+/* tokens de tema — escuro (classe .dark no <html>, ver assets/js/tema.js) */
 html.dark {
   --term-bg: #0a0e0a;
   --term-bg-alt: #10160f;
@@ -20,6 +26,19 @@ html.dark {
   --term-border: #00ff4133;
   --term-fg-soft: #a9c9ae;
   --term-toggle-bg: #0a0e0acc;
+  --term-danger: #ff5f56;
+  color-scheme: dark;
+}
+
+/* esconde o que o Alpine controla ate ele inicializar */
+[x-cloak] {
+  display: none !important;
+}
+
+/* sem transicoes enquanto o Tailwind (CDN) ainda injeta o CSS (ver tema.js/app.js) */
+.preload,
+.preload * {
+  transition: none !important;
 }
 
 ::selection {
@@ -34,6 +53,7 @@ html {
 
 ::-webkit-scrollbar {
   width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: var(--term-bg-alt);
@@ -110,25 +130,78 @@ html {
 
 /* foco visivel no padrao terminal, para navegacao via teclado */
 a:focus-visible,
-button:focus-visible {
+button:focus-visible,
+[role="button"]:focus-visible {
   outline: 2px dashed var(--term-accent);
   outline-offset: 3px;
 }
 
-/* botao de tema flutuante */
-.theme-toggle .icon-moon,
+/* ---------------------------------------------------------------------------
+   Botoes flutuantes (voltar ao hub + tema), injetados por assets/js/app.js.
+   Estilizados aqui, e nao com utilitarios Tailwind, para nao depender do
+   CDN processar markup criado via JS.
+   --------------------------------------------------------------------------- */
+.controles-flutuantes {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fab {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--term-border);
+  background: var(--term-toggle-bg);
+  color: var(--term-fg);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fab svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+}
+
+.fab-destaque {
+  border-color: var(--term-accent);
+  color: var(--term-accent);
+}
+
+.fab:hover {
+  color: var(--term-accent);
+  border-color: var(--term-accent);
+  box-shadow: 0 0 0 1px var(--term-accent), 0 0 18px color-mix(in srgb, var(--term-accent) 35%, transparent);
+}
+
+/* tema claro mostra a lua (ir para o escuro); tema escuro mostra o sol */
 .theme-toggle .icon-sun {
   display: none;
 }
-
-.theme-toggle .icon-moon {
-  display: block;
-}
-
 .dark .theme-toggle .icon-sun {
   display: block;
 }
-
 .dark .theme-toggle .icon-moon {
   display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-blink {
+    animation: none;
+  }
+  .card-frame:hover,
+  .card-frame:focus-visible {
+    transform: none;
+  }
 }

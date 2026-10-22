@@ -1,235 +1,207 @@
 <!DOCTYPE html>
-<html lang="pt-BR" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Resizer :: MicaelParise</title>
-    <meta name="description" content="Redimensione imagens direto no navegador, sem enviar nada para um servidor.">
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Resizer :: MicaelParise</title>
+  <meta name="description" content="Redimensione imagens direto no navegador, sem enviar nada para um servidor.">
 
-    <style>[x-cloak] { display: none !important; }</style>
+  <!-- tema salvo aplicado antes da primeira pintura (sincrono, evita flash) -->
+  <script src="../../assets/js/tema.js"></script>
 
-    <script>
-      (function () {
-        var salvo = localStorage.getItem('tema');
-        var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.classList.toggle('dark', escuro);
-      })();
-    </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script src="../../assets/js/tailwind-tema.js"></script>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              term: {
-                bg: 'var(--term-bg)',
-                alt: 'var(--term-bg-alt)',
-                fg: 'var(--term-fg)',
-                dim: 'var(--term-fg-dim)',
-                accent: 'var(--term-accent)',
-                border: 'var(--term-border)',
-                soft: 'var(--term-fg-soft)',
-                toggle: 'var(--term-toggle-bg)',
-              },
-            },
-            fontFamily: {
-              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-              display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
-            },
-          },
-        },
-      };
-    </script>
+  <link rel="stylesheet" href="../../assets/css/style.css">
 
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <link rel="stylesheet" href="css/styles.css">
+  <!-- scripts com defer executam em ordem: compartilhado, projeto e por ultimo o Alpine -->
+  <script src="../../assets/js/app.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
+</head>
+<body class="min-h-screen bg-term-bg text-term-fg font-mono antialiased">
+  <div class="scanlines" aria-hidden="true"></div>
 
-    <script src="../../assets/js/app.js" defer></script>
-    <script src="js/app.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
-  </head>
-  <body class="min-h-screen bg-term-bg text-term-fg font-mono antialiased">
+  <header class="mx-auto max-w-5xl px-4 pt-8 sm:px-6 sm:pt-12">
+    <p class="text-xs font-semibold uppercase tracking-widest text-term-accent">Ferramenta local</p>
+    <h1 class="mt-1 font-display text-2xl text-term-accent text-glow sm:text-3xl">Image Resizer</h1>
+    <p class="mt-2 max-w-xl text-sm text-term-dim sm:text-base">
+      Ajuste largura, altura e qualidade da sua imagem sem sair do navegador.
+    </p>
+  </header>
 
-    <div class="scanlines" aria-hidden="true"></div>
+  <main class="mx-auto max-w-5xl px-4 pb-24 pt-8 sm:px-6" x-data="redimensionador()">
+    <input type="file" accept="image/*" class="hidden" x-ref="inputArquivo" @change="selecionarArquivo($event)">
 
-    <header class="mx-auto max-w-5xl px-4 pt-8 sm:pt-12 sm:px-6">
-      <p class="text-xs font-semibold uppercase tracking-widest text-term-accent">Ferramenta local</p>
-      <h1 class="mt-1 font-display text-2xl sm:text-3xl text-term-accent text-glow">Image Resizer</h1>
-      <p class="mt-2 max-w-xl text-sm sm:text-base text-term-dim">
-        Ajuste largura, altura e qualidade da sua imagem sem sair do navegador.
-      </p>
-    </header>
-
-    <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6" x-data="redimensionador()">
-      <input type="file" accept="image/*" class="hidden" x-ref="inputArquivo" @change="selecionarArquivo($event)">
-
-      <!-- Estado inicial: nenhuma imagem selecionada -->
-      <section
-        x-show="!imagemCarregada"
-        x-cloak
-        class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.1fr] lg:items-center"
-      >
-        <div class="order-2 space-y-4 lg:order-1">
-          <div class="flex items-start gap-3">
-            <span class="mt-0.5 rounded-lg border border-term-border bg-term-alt p-2 text-term-accent">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg>
-            </span>
-            <div>
-              <p class="font-semibold text-term-fg">100% no seu navegador</p>
-              <p class="text-sm text-term-dim">Nenhuma imagem é enviada para servidores externos.</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-3">
-            <span class="mt-0.5 rounded-lg border border-term-border bg-term-alt p-2 text-term-accent">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-            </span>
-            <div>
-              <p class="font-semibold text-term-fg">Proporção travada por padrão</p>
-              <p class="text-sm text-term-dim">Altere a largura ou altura e a outra dimensão acompanha.</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-3">
-            <span class="mt-0.5 rounded-lg border border-term-border bg-term-alt p-2 text-term-accent">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h9M17 6h3M4 12h3M9 12h11M4 18h13M19 18h1"/><circle cx="13" cy="6" r="2"/><circle cx="7" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>
-            </span>
-            <div>
-              <p class="font-semibold text-term-fg">Controle de qualidade</p>
-              <p class="text-sm text-term-dim">Reduza o tamanho do arquivo final quando precisar.</p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="card-frame order-1 flex min-h-[280px] cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-8 text-center transition-all sm:p-10 lg:order-2"
-          :class="isDragging ? 'border-term-accent bg-term-accent/5 scale-[1.01]' : 'border-term-border bg-term-alt'"
-          @click="abrirSeletorArquivo()"
-          @dragover.prevent="isDragging = true"
-          @dragleave.prevent="isDragging = false"
-          @drop.prevent="soltarArquivo($event)"
-        >
-          <span class="rounded-full bg-term-accent/10 p-4 text-term-accent">
-            <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.5-8.97A5.5 5.5 0 0 1 17.3 8.03 4 4 0 0 1 17 16H8"/><path d="M12 12v7m0-7 3 3m-3-3-3 3"/></svg>
+    <!-- Estado inicial: nenhuma imagem selecionada -->
+    <section
+      x-show="!imagemCarregada"
+      x-cloak
+      class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.1fr] lg:items-center"
+    >
+      <div class="order-2 space-y-4 lg:order-1">
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 rounded-lg border border-term-border bg-term-alt p-2 text-term-accent">
+            <!-- heroicons: shield-check -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+            </svg>
           </span>
           <div>
-            <p class="font-semibold text-term-fg">Arraste e solte sua imagem aqui</p>
-            <p class="mt-1 text-sm text-term-dim">ou clique para selecionar do dispositivo</p>
-          </div>
-          <p class="text-xs text-term-dim">PNG, JPG ou WEBP</p>
-        </div>
-      </section>
-
-      <!-- Estado com imagem carregada -->
-      <section x-show="imagemCarregada" x-cloak class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
-        <div class="card-frame rounded-xl border border-term-border bg-term-alt p-3">
-          <div class="flex min-h-[260px] items-center justify-center overflow-hidden rounded-xl bg-term-bg">
-            <img :src="urlPreview" alt="Pré-visualização da imagem selecionada" class="max-h-[55vh] w-full object-contain">
-          </div>
-          <div class="mt-3 flex items-center justify-between gap-3 px-1">
-            <p class="truncate text-sm text-term-dim" x-text="nomeArquivo"></p>
-            <button
-              type="button"
-              class="flex shrink-0 items-center gap-1.5 rounded-lg border border-term-border px-3 py-1.5 text-sm font-medium text-term-fg transition-colors hover:border-term-accent hover:text-term-accent"
-              @click="trocarImagem()"
-            >
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a8 8 0 0 1 14.5-4.5M20 4v5h-5"/><path d="M20 14a8 8 0 0 1-14.5 4.5M4 20v-5h5"/></svg>
-              Trocar imagem
-            </button>
+            <p class="font-semibold text-term-fg">100% no seu navegador</p>
+            <p class="text-sm text-term-dim">Nenhuma imagem é enviada para servidores externos.</p>
           </div>
         </div>
-
-        <div class="space-y-4 lg:sticky lg:top-6">
-          <div class="card-frame rounded-xl border border-term-border bg-term-alt p-5">
-            <h2 class="text-sm font-semibold uppercase tracking-wide text-term-dim">Dimensões</h2>
-            <div class="mt-3 grid grid-cols-2 gap-3">
-              <label class="block">
-                <span class="text-sm font-medium text-term-fg">Largura</span>
-                <input
-                  type="number"
-                  min="1"
-                  x-model.number="largura"
-                  @input="ajustarAltura()"
-                  class="mt-1 w-full rounded-xl border border-term-border bg-term-bg px-3 py-2.5 text-sm text-term-fg outline-none transition-colors focus:border-term-accent"
-                >
-              </label>
-              <label class="block">
-                <span class="text-sm font-medium text-term-fg">Altura</span>
-                <input
-                  type="number"
-                  min="1"
-                  x-model.number="altura"
-                  @input="ajustarLargura()"
-                  class="mt-1 w-full rounded-xl border border-term-border bg-term-bg px-3 py-2.5 text-sm text-term-fg outline-none transition-colors focus:border-term-accent"
-                >
-              </label>
-            </div>
-
-            <label class="mt-4 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-term-border p-3">
-              <span class="flex items-center gap-2 text-sm font-medium text-term-fg">
-                <svg class="h-4 w-4 text-term-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-                Manter proporção
-              </span>
-              <input type="checkbox" x-model="manterProporcao" class="peer sr-only">
-              <span class="relative h-6 w-11 shrink-0 rounded-full bg-term-border transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-term-bg after:shadow after:transition-transform peer-checked:bg-term-accent peer-checked:after:translate-x-5"></span>
-            </label>
-
-            <label class="mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-term-border p-3">
-              <span class="flex items-center gap-2 text-sm font-medium text-term-fg">
-                <svg class="h-4 w-4 text-term-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h9M17 6h3M4 12h3M9 12h11M4 18h13M19 18h1"/><circle cx="13" cy="6" r="2"/><circle cx="7" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>
-                Reduzir qualidade
-              </span>
-              <input type="checkbox" x-model="reduzirQualidade" class="peer sr-only">
-              <span class="relative h-6 w-11 shrink-0 rounded-full bg-term-border transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-term-bg after:shadow after:transition-transform peer-checked:bg-term-accent peer-checked:after:translate-x-5"></span>
-            </label>
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 rounded-lg border border-term-border bg-term-alt p-2 text-term-accent">
+            <!-- heroicons: lock-closed -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+          </span>
+          <div>
+            <p class="font-semibold text-term-fg">Proporção travada por padrão</p>
+            <p class="text-sm text-term-dim">Altere a largura ou altura e a outra dimensão acompanha.</p>
           </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 rounded-lg border border-term-border bg-term-alt p-2 text-term-accent">
+            <!-- heroicons: adjustments-horizontal -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+            </svg>
+          </span>
+          <div>
+            <p class="font-semibold text-term-fg">Controle de qualidade</p>
+            <p class="text-sm text-term-dim">Reduza o tamanho do arquivo final quando precisar.</p>
+          </div>
+        </div>
+      </div>
 
+      <div
+        role="button"
+        tabindex="0"
+        aria-label="Selecionar imagem"
+        class="card-frame order-1 flex min-h-[280px] cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-8 text-center transition-all sm:p-10 lg:order-2"
+        :class="isDragging ? 'border-term-accent bg-term-accent/5 scale-[1.01]' : 'border-term-border bg-term-alt'"
+        @click="abrirSeletorArquivo()"
+        @keydown.enter.prevent="abrirSeletorArquivo()"
+        @keydown.space.prevent="abrirSeletorArquivo()"
+        @dragover.prevent="isDragging = true"
+        @dragleave.prevent="isDragging = false"
+        @drop.prevent="soltarArquivo($event)"
+      >
+        <span class="rounded-full bg-term-accent/10 p-4 text-term-accent">
+          <!-- heroicons: cloud-arrow-up -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-8 w-8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+          </svg>
+        </span>
+        <div>
+          <p class="font-semibold text-term-fg">Arraste e solte sua imagem aqui</p>
+          <p class="mt-1 text-sm text-term-dim">ou clique para selecionar do dispositivo</p>
+        </div>
+        <p class="text-xs text-term-dim">PNG, JPG ou WEBP</p>
+      </div>
+    </section>
+
+    <!-- Estado com imagem carregada -->
+    <section x-show="imagemCarregada" x-cloak class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
+      <div class="card-frame rounded-xl border border-term-border bg-term-alt p-3">
+        <div class="flex min-h-[260px] items-center justify-center overflow-hidden rounded-xl bg-term-bg">
+          <img :src="urlPreview" alt="Pré-visualização da imagem selecionada" class="max-h-[55vh] w-full object-contain">
+        </div>
+        <div class="mt-3 flex items-center justify-between gap-3 px-1">
+          <p class="truncate text-sm text-term-dim" x-text="nomeArquivo"></p>
           <button
             type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-xl bg-term-accent px-4 py-3.5 font-semibold text-term-bg shadow-md transition-transform hover:brightness-110 active:scale-[0.98]"
-            @click="baixarImagem()"
+            class="flex shrink-0 items-center gap-1.5 rounded-lg border border-term-border px-3 py-1.5 text-sm font-medium text-term-fg transition-colors hover:border-term-accent hover:text-term-accent"
+            @click="trocarImagem()"
           >
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-            Baixar imagem
+            <!-- heroicons: arrow-path -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            Trocar imagem
           </button>
         </div>
-      </section>
-    </main>
+      </div>
 
-    <a
-      href="../../index.html"
-      aria-label="Voltar para o hub de projetos"
-      class="fixed bottom-6 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors"
-    >
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
-    </a>
+      <div class="space-y-4 lg:sticky lg:top-6">
+        <div class="card-frame rounded-xl border border-term-border bg-term-alt p-5">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-term-dim">Dimensões</h2>
+          <div class="mt-3 grid grid-cols-2 gap-3">
+            <label class="block">
+              <span class="text-sm font-medium text-term-fg">Largura</span>
+              <input
+                type="number"
+                min="1"
+                :max="LIMITE_LADO"
+                x-model.number="largura"
+                @input="ajustarAltura()"
+                class="mt-1 w-full rounded-xl border border-term-border bg-term-bg px-3 py-2.5 text-sm text-term-fg outline-none transition-colors focus:border-term-accent"
+              >
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium text-term-fg">Altura</span>
+              <input
+                type="number"
+                min="1"
+                :max="LIMITE_LADO"
+                x-model.number="altura"
+                @input="ajustarLargura()"
+                class="mt-1 w-full rounded-xl border border-term-border bg-term-bg px-3 py-2.5 text-sm text-term-fg outline-none transition-colors focus:border-term-accent"
+              >
+            </label>
+          </div>
 
-    <button
-      type="button"
-      x-data="themeToggle()"
-      x-on:click="toggle()"
-      class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
-      aria-label="Alternar entre tema claro e escuro"
-    >
-      <svg class="icon-sun w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="4.5"/>
-        <line x1="12" y1="1.5" x2="12" y2="4"/>
-        <line x1="12" y1="20" x2="12" y2="22.5"/>
-        <line x1="1.5" y1="12" x2="4" y2="12"/>
-        <line x1="20" y1="12" x2="22.5" y2="12"/>
-        <line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/>
-        <line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/>
-        <line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/>
-        <line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/>
-      </svg>
-      <svg class="icon-moon w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">
-        <path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/>
-      </svg>
-    </button>
+          <label class="mt-4 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-term-border p-3">
+            <span class="flex items-center gap-2 text-sm font-medium text-term-fg">
+              <!-- heroicons: lock-closed -->
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4 text-term-accent" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+              Manter proporção
+            </span>
+            <input type="checkbox" x-model="manterProporcao" @change="ajustarAltura()" class="peer sr-only">
+            <span class="relative h-6 w-11 shrink-0 rounded-full bg-term-border transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-term-bg after:shadow after:transition-transform peer-checked:bg-term-accent peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-term-accent"></span>
+          </label>
 
-  </body>
+          <label class="mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-term-border p-3">
+            <span class="flex items-center gap-2 text-sm font-medium text-term-fg">
+              <!-- heroicons: adjustments-horizontal -->
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4 text-term-accent" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+              </svg>
+              Reduzir qualidade
+            </span>
+            <input type="checkbox" x-model="reduzirQualidade" class="peer sr-only">
+            <span class="relative h-6 w-11 shrink-0 rounded-full bg-term-border transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-term-bg after:shadow after:transition-transform peer-checked:bg-term-accent peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-term-accent"></span>
+          </label>
+
+          <p x-show="!dimensoesValidas" x-cloak class="mt-3 text-xs text-term-danger">
+            Use valores entre 1 e <span x-text="LIMITE_LADO"></span> px.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          :disabled="!dimensoesValidas || baixando"
+          class="flex w-full items-center justify-center gap-2 rounded-xl bg-term-accent px-4 py-3.5 font-semibold text-term-bg shadow-md transition-transform hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          @click="baixarImagem()"
+        >
+          <!-- heroicons: arrow-down-tray -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Baixar imagem
+        </button>
+      </div>
+    </section>
+  </main>
+</body>
 </html>

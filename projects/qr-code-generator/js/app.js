@@ -1,18 +1,11 @@
-// Libera as transições/animações somente depois que tudo terminou de carregar,
-// para nao "piscar" enquanto o Tailwind ainda esta injetando os estilos
-window.addEventListener("load", () => {
-  requestAnimationFrame(() => {
-    document.documentElement.classList.remove("preload");
-  });
-});
-
 document.addEventListener("alpine:init", () => {
   Alpine.data("qrApp", () => ({
     texto: "",
     tamanho: 200,
     corFundo: "#ffffff",
-    corFrente: "#377dff",
+    corFrente: "#0a0e0a",
     gerado: false,
+    erro: "",
     linkDownload: "",
     nomeArquivo: "qrcode.png",
 
@@ -22,16 +15,26 @@ document.addEventListener("alpine:init", () => {
 
     gerar() {
       if (!this.podeGerar) return;
+      this.erro = "";
 
       const container = this.$refs.qrContainer;
       container.innerHTML = "";
-      new QRCode(container, {
-        text: this.texto,
-        width: this.tamanho,
-        height: this.tamanho,
-        colorDark: this.corFrente,
-        colorLight: this.corFundo,
-      });
+      try {
+        new QRCode(container, {
+          text: this.texto,
+          width: this.tamanho,
+          height: this.tamanho,
+          colorDark: this.corFrente,
+          colorLight: this.corFundo,
+          correctLevel: QRCode.CorrectLevel.M,
+        });
+      } catch {
+        // a lib lanca "code length overflow" quando o texto nao cabe no QR Code
+        container.innerHTML = "";
+        this.limparResultado();
+        this.erro = "Texto longo demais para um QR Code. Tente encurtá-lo.";
+        return;
+      }
 
       const canvas = container.querySelector("canvas");
       this.linkDownload = canvas.toDataURL("image/png");
@@ -43,7 +46,7 @@ document.addEventListener("alpine:init", () => {
       try {
         return `${new URL(valor).hostname}-qrcode.png`;
       } catch {
-        const nomeLimpo = valor.replace(/[^a-zA-Z0-9]+/g, "");
+        const nomeLimpo = valor.replace(/[^a-zA-Z0-9]+/g, "").slice(0, 40);
         return `${nomeLimpo || "qrcode"}.png`;
       }
     },
@@ -51,6 +54,7 @@ document.addEventListener("alpine:init", () => {
     limparResultado() {
       this.gerado = false;
       this.linkDownload = "";
+      this.erro = "";
     },
   }));
 });

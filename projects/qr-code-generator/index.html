@@ -1,209 +1,163 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="preload">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QR Code Generator :: MicaelParise</title>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code Generator :: MicaelParise</title>
+  <meta name="description" content="Gere QR Codes a partir de texto ou link, direto no navegador.">
 
-    <!-- Aplica o tema salvo antes da primeira renderização, evitando flash de tema -->
-    <script>
-      (function () {
-        var salvo = localStorage.getItem('tema');
-        var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.classList.toggle('dark', escuro);
-      })();
-    </script>
+  <!-- tema salvo aplicado antes da primeira pintura (sincrono, evita flash) -->
+  <script src="../../assets/js/tema.js"></script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              term: {
-                bg: 'var(--term-bg)',
-                alt: 'var(--term-bg-alt)',
-                fg: 'var(--term-fg)',
-                dim: 'var(--term-fg-dim)',
-                accent: 'var(--term-accent)',
-                border: 'var(--term-border)',
-                soft: 'var(--term-fg-soft)',
-                toggle: 'var(--term-toggle-bg)',
-              },
-            },
-            fontFamily: {
-              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-              display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
-            },
-          },
-        },
-      };
-    </script>
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script src="../../assets/js/tailwind-tema.js"></script>
 
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <link rel="stylesheet" href="css/styles.css" />
-  </head>
-  <body
-    class="bg-term-bg text-term-fg font-mono min-h-screen antialiased"
-  >
-    <div class="scanlines" aria-hidden="true"></div>
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <link rel="stylesheet" href="css/styles.css">
 
-    <div class="min-h-screen flex flex-col items-center justify-center gap-6 px-4 py-10 sm:px-6 lg:px-10">
-      <header class="flex items-center gap-2.5">
-        <svg class="h-7 w-7 text-term-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-          <rect x="3.5" y="3.5" width="6" height="6" rx="1" />
-          <rect x="14.5" y="3.5" width="6" height="6" rx="1" />
-          <rect x="3.5" y="14.5" width="6" height="6" rx="1" />
-          <rect x="14.5" y="14.5" width="2.6" height="2.6" rx="0.5" />
-          <rect x="18" y="14.5" width="2.5" height="2.5" rx="0.5" />
-          <rect x="14.5" y="18" width="2.5" height="2.5" rx="0.5" />
-          <rect x="18" y="18" width="2.5" height="2.5" rx="0.5" />
+  <!-- scripts com defer executam em ordem: compartilhado, lib, projeto e por ultimo o Alpine -->
+  <script src="../../assets/js/app.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
+</head>
+<body class="min-h-screen bg-term-bg text-term-fg font-mono antialiased">
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <div class="flex min-h-screen flex-col items-center justify-center gap-6 px-4 pb-24 pt-10 sm:px-6 lg:px-10">
+    <header class="text-center">
+      <p class="text-sm text-term-dim">visitante@micaelparise:~$ qrcode --generate</p>
+      <div class="mt-2 flex items-center justify-center gap-2.5">
+        <!-- heroicons: qr-code -->
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-7 w-7 text-term-accent" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z" />
         </svg>
-        <h1 class="font-display text-2xl text-term-accent text-glow">QR Code Generator</h1>
-      </header>
+        <h1 class="font-display text-3xl text-term-accent text-glow">QR Code Generator</h1>
+      </div>
+    </header>
 
-      <main
-        x-data="qrApp"
-        class="w-full max-w-3xl grid md:grid-cols-2 gap-5"
-      >
-        <!-- Formulario -->
-        <section class="card-frame border border-term-border bg-term-alt rounded-xl p-6 sm:p-8 flex flex-col gap-5">
-          <div>
-            <label for="texto" class="block text-sm font-medium mb-1.5 text-term-soft">
-              Texto ou link
+    <main
+      x-data="qrApp"
+      class="grid w-full max-w-3xl gap-5 md:grid-cols-2"
+    >
+      <!-- Formulario -->
+      <form @submit.prevent="gerar()" class="card-frame flex flex-col gap-5 rounded-xl border border-term-border bg-term-alt p-6 sm:p-8">
+        <div>
+          <label for="texto" class="mb-1.5 block text-sm font-medium text-term-soft">
+            Texto ou link
+          </label>
+          <div class="relative">
+            <!-- heroicons: link -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-term-dim" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+            </svg>
+            <input
+              id="texto"
+              type="text"
+              x-model="texto"
+              @input="if (!podeGerar) limparResultado()"
+              placeholder="Digite um texto ou cole um link"
+              autocomplete="off"
+              class="w-full rounded-xl border border-term-border bg-term-bg py-2.5 pl-10 pr-3 text-sm text-term-fg outline-none transition-colors placeholder:text-term-dim focus:border-term-accent"
+            >
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-3 sm:col-span-1">
+            <label for="tamanho" class="mb-1.5 block text-sm font-medium text-term-soft">
+              Tamanho
             </label>
             <div class="relative">
-              <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-term-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+              <select
+                id="tamanho"
+                x-model.number="tamanho"
+                class="w-full cursor-pointer appearance-none rounded-xl border border-term-border bg-term-bg py-2.5 pl-3 pr-8 text-sm text-term-fg outline-none transition-colors focus:border-term-accent"
+              >
+                <option value="100">100 x 100</option>
+                <option value="200">200 x 200</option>
+                <option value="300">300 x 300</option>
+              </select>
+              <!-- heroicons: chevron-down -->
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-term-dim" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
               </svg>
-              <input
-                id="texto"
-                type="text"
-                x-model="texto"
-                @input="if (!podeGerar) limparResultado()"
-                placeholder="Digite um texto ou cole um link"
-                class="w-full rounded-xl border border-term-border bg-term-bg text-term-fg py-2.5 pl-10 pr-3 text-sm outline-none focus:border-term-accent transition-colors"
-              />
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-3">
-            <div class="col-span-3 sm:col-span-1">
-              <label for="tamanho" class="block text-sm font-medium mb-1.5 text-term-soft">
-                Tamanho
-              </label>
-              <div class="relative">
-                <select
-                  id="tamanho"
-                  x-model.number="tamanho"
-                  class="w-full appearance-none rounded-xl border border-term-border bg-term-bg text-term-fg py-2.5 pl-3 pr-8 text-sm outline-none focus:border-term-accent transition-colors cursor-pointer"
-                >
-                  <option :value="100">100 x 100</option>
-                  <option :value="200" selected>200 x 200</option>
-                  <option :value="300">300 x 300</option>
-                </select>
-                <svg class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-term-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                </svg>
-              </div>
-            </div>
-
-            <div>
-              <label for="corFundo" class="block text-sm font-medium mb-1.5 text-term-soft">
-                Fundo
-              </label>
-              <input id="corFundo" type="color" x-model="corFundo" class="h-10 w-full" />
-            </div>
-
-            <div>
-              <label for="corFrente" class="block text-sm font-medium mb-1.5 text-term-soft">
-                Traço
-              </label>
-              <input id="corFrente" type="color" x-model="corFrente" class="h-10 w-full" />
-            </div>
+          <div>
+            <label for="corFundo" class="mb-1.5 block text-sm font-medium text-term-soft">
+              Fundo
+            </label>
+            <input id="corFundo" type="color" x-model="corFundo" class="h-10 w-full">
           </div>
 
-          <button
-            type="button"
-            @click="gerar()"
-            :disabled="!podeGerar"
-            :class="podeGerar
-              ? 'bg-term-accent text-term-bg cursor-pointer hover:text-glow'
-              : 'bg-term-bg text-term-dim border border-term-border cursor-not-allowed'"
-            class="mt-1 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-medium shadow-md transition-colors"
-          >
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+          <div>
+            <label for="corFrente" class="mb-1.5 block text-sm font-medium text-term-soft">
+              Traço
+            </label>
+            <input id="corFrente" type="color" x-model="corFrente" class="h-10 w-full">
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          :disabled="!podeGerar"
+          :class="podeGerar
+            ? 'bg-term-accent text-term-bg border-term-accent cursor-pointer hover:brightness-110'
+            : 'bg-term-bg text-term-dim border-term-border cursor-not-allowed'"
+          class="mt-1 inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3 text-sm font-medium shadow-md transition-colors"
+        >
+          <!-- heroicons: sparkles -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+          </svg>
+          Gerar QR Code
+        </button>
+
+        <p x-show="erro" x-cloak x-text="erro" role="alert" class="text-center text-xs text-term-danger"></p>
+      </form>
+
+      <!-- Pre-visualizacao -->
+      <section class="card-frame flex flex-col items-center justify-center gap-4 rounded-xl border border-term-border bg-term-alt p-6 sm:p-8">
+        <div class="flex aspect-square w-80 max-w-full items-center justify-center rounded-xl border border-dashed border-term-border bg-term-bg p-2">
+          <div x-show="!gerado" class="flex flex-col items-center gap-2 text-term-dim">
+            <!-- heroicons: qr-code -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-12 w-12" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z" />
             </svg>
-            Gerar QR Code
-          </button>
-        </section>
-
-        <!-- Pre-visualizacao -->
-        <section class="card-frame border border-term-border bg-term-alt rounded-xl p-6 sm:p-8 flex flex-col items-center justify-center gap-4">
-          <div class="flex h-80 w-80 max-w-full items-center justify-center rounded-xl border border-dashed border-term-border bg-term-bg">
-            <div x-show="!gerado" class="flex flex-col items-center gap-2 text-term-dim">
-              <svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.4">
-                <rect x="4" y="4" width="6" height="6" rx="1" />
-                <rect x="14" y="4" width="6" height="6" rx="1" />
-                <rect x="4" y="14" width="6" height="6" rx="1" />
-                <path stroke-linecap="round" d="M15 15h2m3 0h.01M15 18h5M15 21h5M18 15v6" />
-              </svg>
-              <p class="text-xs text-center px-2">Seu QR Code vai aparecer aqui</p>
-            </div>
-            <div x-ref="qrContainer" x-show="gerado" x-cloak class="[&>canvas]:max-w-full [&>canvas]:max-h-full [&>canvas]:rounded-md"></div>
+            <p class="px-2 text-center text-xs">Seu QR Code vai aparecer aqui</p>
           </div>
+          <!-- qrcodejs insere um <canvas> e um <img> aqui dentro -->
+          <div x-ref="qrContainer" x-show="gerado" x-cloak role="img" :aria-label="`QR Code de ${texto}`" class="[&>canvas]:max-h-full [&>canvas]:max-w-full [&>canvas]:rounded-md [&>img]:max-h-full [&>img]:max-w-full [&>img]:rounded-md"></div>
+        </div>
 
-          <a
-            x-show="gerado"
-            x-cloak
-            x-transition
-            :href="linkDownload"
-            :download="nomeArquivo"
-            class="inline-flex items-center gap-2 rounded-xl border border-term-accent px-5 py-2.5 text-sm font-medium text-term-accent hover:bg-term-accent/10 transition-colors"
-          >
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-            </svg>
-            Baixar imagem
-          </a>
-        </section>
-      </main>
+        <a
+          x-show="gerado"
+          x-cloak
+          x-transition
+          :href="linkDownload"
+          :download="nomeArquivo"
+          class="inline-flex items-center gap-2 rounded-xl border border-term-accent px-5 py-2.5 text-sm font-medium text-term-accent transition-colors hover:bg-term-accent/10"
+        >
+          <!-- heroicons: arrow-down-tray -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Baixar imagem
+        </a>
+      </section>
+    </main>
 
-      <footer class="text-xs text-term-dim">
-        Gerado localmente no seu navegador, nenhum dado é enviado a servidores.
-      </footer>
-    </div>
-
-    <!-- Voltar para o hub -->
-    <a
-      href="../../index.html"
-      aria-label="Voltar para o hub de projetos"
-      class="fixed bottom-6 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors"
-    >
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
-    </a>
-
-    <!-- TOGGLE DE TEMA -->
-    <button
-      type="button"
-      x-data="themeToggle()"
-      x-on:click="toggle()"
-      class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
-      aria-label="Alternar entre tema claro e escuro"
-    >
-      <svg class="icon-sun w-5 h-5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/><line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/><line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/><line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/></g></svg>
-      <svg class="icon-moon w-5 h-5" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></svg>
-    </button>
-
-    <script src="../../assets/js/app.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="js/app.js"></script>
-  </body>
+    <footer class="text-center text-xs text-term-dim">
+      Gerado localmente no seu navegador, nenhum dado é enviado a servidores.
+    </footer>
+  </div>
+</body>
 </html>

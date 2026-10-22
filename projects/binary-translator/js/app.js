@@ -1,17 +1,18 @@
+// Texto <-> binario usando bytes UTF-8, para que acentos e emojis
+// sobrevivam a ida e volta (cada byte vira um grupo de 8 bits).
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
 function textToBinary(text) {
-  return text
-    .split('')
-    .map((char) => char.charCodeAt(0).toString(2).padStart(8, '0'))
-    .join(' ');
+  return Array.from(encoder.encode(text), (byte) => byte.toString(2).padStart(8, '0')).join(' ');
 }
 
+// Retorna o texto decodificado e se algum bloco invalido foi descartado.
 function binaryToText(binary) {
-  return binary
-    .trim()
-    .split(/\s+/)
-    .filter((chunk) => /^[01]+$/.test(chunk))
-    .map((chunk) => String.fromCharCode(parseInt(chunk, 2)))
-    .join('');
+  const chunks = binary.trim().split(/\s+/).filter(Boolean);
+  const valid = chunks.filter((chunk) => /^[01]{1,8}$/.test(chunk));
+  const bytes = Uint8Array.from(valid, (chunk) => parseInt(chunk, 2));
+  return { text: decoder.decode(bytes), invalid: valid.length !== chunks.length };
 }
 
 function converterApp() {
@@ -19,6 +20,7 @@ function converterApp() {
     mode: 'textToBinary',
     input: '',
     output: '',
+    invalid: false,
     copied: false,
 
     get inputLabel() {
@@ -35,7 +37,14 @@ function converterApp() {
     },
 
     convert() {
-      this.output = this.mode === 'textToBinary' ? textToBinary(this.input) : binaryToText(this.input);
+      if (this.mode === 'textToBinary') {
+        this.output = textToBinary(this.input);
+        this.invalid = false;
+      } else {
+        const result = binaryToText(this.input);
+        this.output = result.text;
+        this.invalid = result.invalid;
+      }
     },
 
     setMode(mode) {
@@ -53,13 +62,18 @@ function converterApp() {
     clear() {
       this.input = '';
       this.output = '';
+      this.invalid = false;
     },
 
-    copyOutput() {
+    async copyOutput() {
       if (!this.output) return;
-      navigator.clipboard.writeText(this.output);
-      this.copied = true;
-      setTimeout(() => (this.copied = false), 1500);
+      try {
+        await navigator.clipboard.writeText(this.output);
+        this.copied = true;
+        setTimeout(() => (this.copied = false), 1500);
+      } catch {
+        // clipboard indisponivel (ex.: pagina fora de https)
+      }
     },
   };
 }

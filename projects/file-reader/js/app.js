@@ -1,56 +1,56 @@
-function leitorArquivos() {
-	return {
-		nomeArquivo: '',
-		conteudo: '',
-		arquivoSelecionado: false,
-		arrastando: false,
-		erro: '',
+// extensoes aceitas mesmo quando o navegador nao informa um MIME text/*
+// (ex.: .md costuma vir com type vazio no Windows)
+const EXTENSOES_TEXTO = ['txt', 'md', 'html', 'css', 'js'];
 
-		selecionarArquivo(evento) {
-			this.processarArquivo(evento.target.files[0]);
-		},
-
-		soltarArquivo(evento) {
-			this.arrastando = false;
-			this.processarArquivo(evento.dataTransfer.files[0]);
-		},
-
-		processarArquivo(arquivo) {
-			this.erro = '';
-			if (!arquivo) return;
-
-			if (arquivo.type && !arquivo.type.startsWith('text/')) {
-				this.erro = `"${arquivo.name}" não é um arquivo de texto válido.`;
-				return;
-			}
-
-			const leitor = new FileReader();
-			leitor.onload = (evento) => {
-				this.nomeArquivo = arquivo.name;
-				this.conteudo = evento.target.result;
-				this.arquivoSelecionado = true;
-			};
-			leitor.readAsText(arquivo);
-		},
-
-		limpar() {
-			this.nomeArquivo = '';
-			this.conteudo = '';
-			this.arquivoSelecionado = false;
-			this.erro = '';
-			this.$refs.entrada.value = '';
-		}
-	};
+function eArquivoDeTexto(arquivo) {
+  const extensao = arquivo.name.split('.').pop().toLowerCase();
+  return arquivo.type.startsWith('text/') || EXTENSOES_TEXTO.includes(extensao);
 }
 
-// A transição de cores só é ligada depois que a página termina de carregar.
-// Isso evita que o Tailwind (carregado via CDN) anime a troca da cor "crua" do
-// navegador para a cor final assim que seu CSS é gerado, o que aparecia como
-// um flash nos cards, textos e bordas ao recarregar a tela.
-window.addEventListener('load', () => {
-	requestAnimationFrame(() => {
-		document.querySelectorAll('.js-transicao').forEach((elemento) => {
-			elemento.classList.add('transition-colors');
-		});
-	});
-});
+function leitorArquivos() {
+  return {
+    nomeArquivo: '',
+    conteudo: '',
+    arquivoSelecionado: false,
+    arrastando: false,
+    erro: '',
+
+    selecionarArquivo(evento) {
+      this.processarArquivo(evento.target.files[0]);
+    },
+
+    soltarArquivo(evento) {
+      this.arrastando = false;
+      this.processarArquivo(evento.dataTransfer.files[0]);
+    },
+
+    processarArquivo(arquivo) {
+      this.erro = '';
+      if (!arquivo) return;
+
+      if (!eArquivoDeTexto(arquivo)) {
+        this.erro = `"${arquivo.name}" não é um arquivo de texto válido.`;
+        return;
+      }
+
+      const leitor = new FileReader();
+      leitor.onload = (evento) => {
+        this.nomeArquivo = arquivo.name;
+        this.conteudo = evento.target.result;
+        this.arquivoSelecionado = true;
+      };
+      leitor.onerror = () => {
+        this.erro = `Não foi possível ler "${arquivo.name}".`;
+      };
+      leitor.readAsText(arquivo);
+    },
+
+    limpar() {
+      this.nomeArquivo = '';
+      this.conteudo = '';
+      this.arquivoSelecionado = false;
+      this.erro = '';
+      this.$refs.entrada.value = '';
+    },
+  };
+}

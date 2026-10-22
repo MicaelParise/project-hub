@@ -5,8 +5,7 @@ const DEFAULT_IMG = "assets/images/disc.jpg";
 function formatTime(totalSeconds) {
   if (!isFinite(totalSeconds) || totalSeconds < 0) return "0:00";
   const minutes = Math.floor(totalSeconds / 60);
-  let seconds = Math.floor(totalSeconds % 60);
-  if (seconds < 10) seconds = `0${seconds}`;
+  const seconds = String(Math.floor(totalSeconds % 60)).padStart(2, "0");
   return `${minutes}:${seconds}`;
 }
 
@@ -18,11 +17,12 @@ function musicPlayer() {
     playing: false,
     currentTime: 0,
     duration: 0,
-    repeatMode: "repeat", // "repeat" | "repeat_one" | "shuffle"
+    repeatMode: "playlist", // "playlist" | "one" | "shuffle"
     showList: false,
     showInfo: false,
     durations: {},
 
+    // chamado automaticamente pelo Alpine
     init() {
       this.probeDurations();
       this.loadSong(false);
@@ -41,12 +41,19 @@ function musicPlayer() {
     },
 
     get repeatTitle() {
-      if (this.repeatMode === "repeat") return "Playlist em loop";
-      if (this.repeatMode === "repeat_one") return "Música em loop";
+      if (this.repeatMode === "playlist") return "Playlist em loop";
+      if (this.repeatMode === "one") return "Música em loop";
       return "Ordem aleatória";
     },
 
     formatTime,
+
+    // audio.play() devolve uma promise que rejeita se o navegador bloquear
+    // a reproducao (ex.: sem interacao do usuario); ignoramos sem quebrar a UI
+    play() {
+      const promise = this.$refs.audio.play();
+      if (promise) promise.catch(() => (this.playing = false));
+    },
 
     // carrega a faixa atual no elemento <audio>; toca em seguida se autoplay for true
     loadSong(autoplay) {
@@ -54,12 +61,11 @@ function musicPlayer() {
       audio.src = `assets/music/${this.current.src}.mp3`;
       this.currentTime = 0;
       this.duration = 0;
-      if (autoplay) audio.play();
+      if (autoplay) this.play();
     },
 
     togglePlay() {
-      const audio = this.$refs.audio;
-      this.playing ? audio.pause() : audio.play();
+      this.playing ? this.$refs.audio.pause() : this.play();
     },
 
     prev() {
@@ -79,26 +85,32 @@ function musicPlayer() {
 
     cycleRepeat() {
       this.repeatMode =
-        this.repeatMode === "repeat" ? "repeat_one" :
-        this.repeatMode === "repeat_one" ? "shuffle" : "repeat";
+        this.repeatMode === "playlist" ? "one" :
+        this.repeatMode === "one" ? "shuffle" : "playlist";
     },
 
     // clique na barra de progresso: pula para o ponto clicado
     seek(event) {
+      if (!this.duration) return;
       const rect = event.currentTarget.getBoundingClientRect();
-      const ratio = (event.clientX - rect.left) / rect.width;
+      const ratio = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+      this.$refs.audio.currentTime = ratio * this.duration;
+      this.play();
+    },
+
+    // setas do teclado na barra de progresso
+    skipBy(seconds) {
+      if (!this.duration) return;
       const audio = this.$refs.audio;
-      audio.currentTime = ratio * (this.duration || 0);
-      audio.play();
+      audio.currentTime = Math.min(Math.max(audio.currentTime + seconds, 0), this.duration);
     },
 
     onEnded() {
-      const audio = this.$refs.audio;
-      if (this.repeatMode === "repeat") {
+      if (this.repeatMode === "playlist") {
         this.next();
-      } else if (this.repeatMode === "repeat_one") {
-        audio.currentTime = 0;
-        audio.play();
+      } else if (this.repeatMode === "one") {
+        this.$refs.audio.currentTime = 0;
+        this.play();
       } else {
         let randIndex = this.index;
         if (this.songs.length > 1) {
@@ -121,10 +133,13 @@ function musicPlayer() {
     // busca a duracao de cada faixa (fora do DOM) para exibir na lista de musicas
     probeDurations() {
       this.songs.forEach((song, i) => {
-        const probe = new Audio(`assets/music/${song.src}.mp3`);
+        const probe = new Audio();
+        probe.preload = "metadata";
         probe.addEventListener("loadedmetadata", () => {
           this.durations[i] = formatTime(probe.duration);
-        });
+          probe.removeAttribute("src");
+        }, { once: true });
+        probe.src = `assets/music/${song.src}.mp3`;
       });
     },
   };

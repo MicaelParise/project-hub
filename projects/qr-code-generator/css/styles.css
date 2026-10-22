@@ -1,15 +1,4 @@
-[x-cloak] {
-  display: none !important;
-}
-
-/* Bloqueia transições e animações até a página terminar de carregar,
-   evitando a piscada causada pela injeção assíncrona do Tailwind via CDN */
-.preload,
-.preload * {
-  transition: none !important;
-  animation: none !important;
-}
-
+/* input type="color" sem a moldura padrao do navegador, no estilo dos demais campos */
 input[type="color"] {
   -webkit-appearance: none;
   appearance: none;

@@ -4,130 +4,105 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cronometer :: MicaelParise</title>
+  <meta name="description" content="Cronômetro com precisão de centésimos, direto no navegador.">
 
-  <style>[x-cloak] { display: none !important; }</style>
-
-  <script>
-    (function () {
-      var salvo = localStorage.getItem('tema');
-      var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.classList.toggle('dark', escuro);
-    })();
-  </script>
+  <!-- tema salvo aplicado antes da primeira pintura (sincrono, evita flash) -->
+  <script src="../../assets/js/tema.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            term: {
-              bg: 'var(--term-bg)',
-              alt: 'var(--term-bg-alt)',
-              fg: 'var(--term-fg)',
-              dim: 'var(--term-fg-dim)',
-              accent: 'var(--term-accent)',
-              border: 'var(--term-border)',
-              soft: 'var(--term-fg-soft)',
-              toggle: 'var(--term-toggle-bg)',
-            },
-          },
-          fontFamily: {
-            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-            display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
-          },
-        },
-      },
-    };
-  </script>
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script src="../../assets/js/tailwind-tema.js"></script>
 
   <link rel="stylesheet" href="../../assets/css/style.css">
-  <link rel="stylesheet" href="css/styles.css">
 
+  <!-- scripts com defer executam em ordem: compartilhado, projeto e por ultimo o Alpine -->
   <script src="../../assets/js/app.js" defer></script>
-  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
 </head>
-<body class="min-h-screen font-mono bg-term-bg text-term-fg antialiased overflow-x-hidden transition-colors duration-300">
+<body class="min-h-screen overflow-x-hidden bg-term-bg text-term-fg font-mono antialiased">
+  <div class="scanlines" aria-hidden="true"></div>
 
-<div class="scanlines" aria-hidden="true"></div>
-
-  <main class="min-h-screen flex flex-col items-center justify-center gap-8 px-4 py-10 sm:py-16">
+  <main class="flex min-h-screen flex-col items-center justify-center gap-8 px-4 pb-24 pt-10 sm:py-16">
 
     <header class="text-center">
-      <p class="text-term-dim text-sm sm:text-base">visitante@micaelparise:~$ cronometer --start</p>
-      <h1 class="font-display text-3xl sm:text-4xl mt-2 text-term-accent text-glow">
+      <p class="text-sm text-term-dim sm:text-base">visitante@micaelparise:~$ cronometer --start</p>
+      <h1 class="mt-2 font-display text-3xl text-term-accent text-glow sm:text-4xl">
         Cronometer<span class="cursor-blink" aria-hidden="true">&nbsp;</span>
       </h1>
       <p class="mt-4 text-sm text-term-dim">Meça o tempo com precisão de centésimos</p>
     </header>
 
-    <section x-data="cronometro()" class="w-full max-w-md flex flex-col items-center gap-6">
+    <section x-data="cronometro()" class="flex w-full max-w-md flex-col items-center gap-6">
 
-      <div class="card-frame w-full border border-term-border bg-term-alt rounded-xl px-4 py-8 sm:px-8 sm:py-10">
+      <div class="card-frame w-full rounded-xl border border-term-border bg-term-alt px-4 py-8 sm:px-8 sm:py-10">
 
-        <div class="flex items-center justify-center gap-1.5 mb-4 h-5" x-cloak>
-          <template x-if="rodando">
-            <span class="flex items-center gap-2 text-xs font-medium text-term-accent">
-              <span class="w-2 h-2 rounded-full bg-term-accent animate-pulse"></span>
-              Em execução
-            </span>
-          </template>
-          <template x-if="!rodando && decorridoAcumulado > 0">
-            <span class="text-xs font-medium text-term-dim">Pausado</span>
-          </template>
-          <template x-if="!rodando && decorridoAcumulado === 0">
-            <span class="text-xs font-medium text-term-dim">Pronto para iniciar</span>
-          </template>
+        <div class="mb-4 flex h-5 items-center justify-center" x-cloak aria-live="polite">
+          <span x-show="rodando" class="flex items-center gap-2 text-xs font-medium text-term-accent">
+            <span class="h-2 w-2 animate-pulse rounded-full bg-term-accent"></span>
+            Em execução
+          </span>
+          <span x-show="!rodando" class="text-xs font-medium text-term-dim" x-text="decorridoAcumulado > 0 ? 'Pausado' : 'Pronto para iniciar'"></span>
         </div>
 
-        <div class="flex items-end justify-center select-none">
+        <div class="flex select-none items-end justify-center" role="timer" :aria-label="`${horas}:${minutos}:${segundos}`">
           <div class="flex flex-col items-center">
-            <span class="font-display text-4xl sm:text-6xl text-term-accent text-glow tabular-nums" x-text="horas">00</span>
-            <span class="hidden sm:block mt-1 text-[10px] uppercase tracking-widest text-term-dim">horas</span>
+            <span class="font-display text-4xl tabular-nums text-term-accent text-glow sm:text-6xl" x-text="horas">00</span>
+            <span class="mt-1 hidden text-[10px] uppercase tracking-widest text-term-dim sm:block">horas</span>
           </div>
-          <span class="font-display text-4xl sm:text-6xl text-term-border pb-0 sm:pb-4">:</span>
+          <span class="pb-0 font-display text-4xl text-term-border sm:pb-4 sm:text-6xl" aria-hidden="true">:</span>
           <div class="flex flex-col items-center">
-            <span class="font-display text-4xl sm:text-6xl text-term-accent text-glow tabular-nums" x-text="minutos">00</span>
-            <span class="hidden sm:block mt-1 text-[10px] uppercase tracking-widest text-term-dim">min</span>
+            <span class="font-display text-4xl tabular-nums text-term-accent text-glow sm:text-6xl" x-text="minutos">00</span>
+            <span class="mt-1 hidden text-[10px] uppercase tracking-widest text-term-dim sm:block">min</span>
           </div>
-          <span class="font-display text-4xl sm:text-6xl text-term-border pb-0 sm:pb-4">:</span>
+          <span class="pb-0 font-display text-4xl text-term-border sm:pb-4 sm:text-6xl" aria-hidden="true">:</span>
           <div class="flex flex-col items-center">
-            <span class="font-display text-4xl sm:text-6xl text-term-accent text-glow tabular-nums" x-text="segundos">00</span>
-            <span class="hidden sm:block mt-1 text-[10px] uppercase tracking-widest text-term-dim">seg</span>
+            <span class="font-display text-4xl tabular-nums text-term-accent text-glow sm:text-6xl" x-text="segundos">00</span>
+            <span class="mt-1 hidden text-[10px] uppercase tracking-widest text-term-dim sm:block">seg</span>
           </div>
-          <span class="font-display text-4xl sm:text-6xl text-term-border pb-0 sm:pb-4">:</span>
+          <span class="pb-0 font-display text-4xl text-term-border sm:pb-4 sm:text-6xl" aria-hidden="true">.</span>
           <div class="flex flex-col items-center">
-            <span class="font-display text-4xl sm:text-6xl text-term-accent text-glow tabular-nums" x-text="centesimos">00</span>
-            <span class="hidden sm:block mt-1 text-[10px] uppercase tracking-widest text-term-dim">ms</span>
+            <span class="font-display text-4xl tabular-nums text-term-accent text-glow sm:text-6xl" x-text="centesimos">00</span>
+            <span class="mt-1 hidden text-[10px] uppercase tracking-widest text-term-dim sm:block">cent</span>
           </div>
         </div>
 
       </div>
 
-      <div class="w-full grid grid-cols-3 gap-3">
+      <div class="grid w-full grid-cols-3 gap-3">
         <button
+          type="button"
           @click="iniciar()"
           :disabled="rodando"
-          class="card-frame flex flex-col items-center gap-1.5 rounded-xl border border-term-accent bg-term-accent text-term-bg shadow-md py-3 font-medium text-sm disabled:opacity-40 disabled:pointer-events-none transition-colors">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
-          Iniciar
+          class="card-frame flex flex-col items-center gap-1.5 rounded-xl border border-term-accent bg-term-accent py-3 text-sm font-medium text-term-bg shadow-md transition-colors disabled:pointer-events-none disabled:opacity-40">
+          <!-- heroicons: play -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+          </svg>
+          <span x-text="decorridoAcumulado > 0 ? 'Retomar' : 'Iniciar'">Iniciar</span>
         </button>
         <button
+          type="button"
           @click="pausar()"
           :disabled="!rodando"
-          class="card-frame flex flex-col items-center gap-1.5 rounded-xl border border-term-border bg-term-alt text-term-fg shadow-md py-3 font-medium text-sm disabled:opacity-40 disabled:pointer-events-none hover:text-term-accent hover:border-term-accent transition-colors">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+          class="card-frame flex flex-col items-center gap-1.5 rounded-xl border border-term-border bg-term-alt py-3 text-sm font-medium text-term-fg shadow-md transition-colors hover:border-term-accent hover:text-term-accent disabled:pointer-events-none disabled:opacity-40">
+          <!-- heroicons: pause -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+          </svg>
           Pausar
         </button>
         <button
+          type="button"
           @click="reiniciar()"
-          class="card-frame flex flex-col items-center gap-1.5 rounded-xl border border-term-border bg-term-alt text-term-fg shadow-md py-3 font-medium text-sm hover:text-term-accent hover:border-term-accent transition-colors">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><polyline points="3 4 3 9 8 9"></polyline></svg>
+          class="card-frame flex flex-col items-center gap-1.5 rounded-xl border border-term-border bg-term-alt py-3 text-sm font-medium text-term-fg shadow-md transition-colors hover:border-term-accent hover:text-term-accent">
+          <!-- heroicons: arrow-path -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+          </svg>
           Reiniciar
         </button>
       </div>
@@ -135,25 +110,5 @@
     </section>
 
   </main>
-
-  <!-- VOLTAR PARA O HUB -->
-  <a href="../../index.html" aria-label="Voltar para o hub de projetos"
-     class="fixed bottom-6 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
-  </a>
-
-  <!-- TOGGLE DE TEMA -->
-  <button
-    type="button"
-    x-data="themeToggle()"
-    x-on:click="toggle()"
-    class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
-    aria-label="Alternar entre tema claro e escuro"
-  >
-    <svg class="icon-sun w-5 h-5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/><line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/><line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/><line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/></g></svg>
-    <svg class="icon-moon w-5 h-5" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></svg>
-  </button>
-
-  <script src="js/app.js"></script>
 </body>
 </html>

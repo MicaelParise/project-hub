@@ -4,121 +4,69 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Random Password :: MicaelParise</title>
-  <meta name="description" content="Gere senhas fortes e aleatórias em um clique.">
+  <meta name="description" content="Gere senhas fortes e aleatórias direto no navegador.">
 
-  <style>[x-cloak] { display: none !important; }</style>
-
-  <script>
-    (function () {
-      var salvo = localStorage.getItem('tema');
-      var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.classList.toggle('dark', escuro);
-    })();
-  </script>
+  <!-- tema salvo aplicado antes da primeira pintura (sincrono, evita flash) -->
+  <script src="../../assets/js/tema.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            term: {
-              bg: 'var(--term-bg)',
-              alt: 'var(--term-bg-alt)',
-              fg: 'var(--term-fg)',
-              dim: 'var(--term-fg-dim)',
-              accent: 'var(--term-accent)',
-              border: 'var(--term-border)',
-              soft: 'var(--term-fg-soft)',
-              toggle: 'var(--term-toggle-bg)',
-            },
-          },
-          fontFamily: {
-            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-            display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
-          },
-        },
-      },
-    };
-  </script>
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script src="../../assets/js/tailwind-tema.js"></script>
 
   <link rel="stylesheet" href="../../assets/css/style.css">
   <link rel="stylesheet" href="css/styles.css">
+
+  <!-- scripts com defer executam em ordem: compartilhado, projeto e por ultimo o Alpine -->
   <script src="../../assets/js/app.js" defer></script>
   <script src="js/app.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
 </head>
-<body class="min-h-screen bg-term-bg text-term-fg font-mono transition-colors">
-<div class="scanlines" aria-hidden="true"></div>
+<body class="min-h-screen bg-term-bg text-term-fg font-mono antialiased">
+  <div class="scanlines" aria-hidden="true"></div>
 
-  <main class="min-h-screen flex items-center justify-center p-4 sm:p-6">
+  <main class="flex min-h-screen items-center justify-center p-4 pb-24 sm:p-6">
     <div class="w-full max-w-md">
 
-      <div class="mb-6 text-center sm:text-left sm:mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Random Password</h1>
+      <div class="mb-6 text-center sm:mb-8 sm:text-left">
+        <p class="text-sm text-term-dim">visitante@micaelparise:~$ passwd --random</p>
+        <h1 class="mt-2 font-display text-3xl tracking-tight text-term-accent text-glow sm:text-4xl">Random Password</h1>
         <p class="mt-1 text-sm text-term-dim">Crie senhas fortes e aleatórias em um clique.</p>
       </div>
 
-      <div x-data="appSenha()" class="card-frame border border-term-border bg-term-alt rounded-xl shadow-lg p-5 sm:p-6">
+      <div x-data="appSenha()" class="card-frame rounded-xl border border-term-border bg-term-alt p-5 shadow-lg sm:p-6">
 
         <div class="flex items-center gap-2 rounded-xl border border-term-border bg-term-bg px-4 py-3">
-          <span x-text="senha" class="flex-1 truncate font-mono text-term-accent text-glow text-base sm:text-lg tracking-wide select-all"></span>
+          <span x-text="senha" class="flex-1 select-all truncate font-mono text-base tracking-wide text-term-accent text-glow sm:text-lg" aria-label="Senha gerada"></span>
 
-          <button @click="copiar()" class="relative shrink-0 rounded-lg p-2 text-term-dim hover:text-term-accent hover:bg-term-alt transition-colors" aria-label="Copiar senha">
-            <svg x-show="!copiado" x-cloak xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="11" height="11" rx="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          <button type="button" @click="copiar()" class="relative shrink-0 rounded-lg p-2 text-term-dim transition-colors hover:bg-term-alt hover:text-term-accent" aria-label="Copiar senha">
+            <!-- heroicons: document-duplicate / check -->
+            <svg x-show="!copiado" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
             </svg>
-            <svg x-show="copiado" x-cloak xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-term-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 6 9 17l-5-5"></path>
+            <svg x-show="copiado" x-cloak xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-term-accent" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
             </svg>
           </button>
         </div>
 
-        <button @click="gerar()" class="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-term-accent text-term-bg font-semibold py-3 shadow-md transition-colors hover:opacity-90 active:opacity-80">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 2v6h-6"></path>
-            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
-            <path d="M3 22v-6h6"></path>
-            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+        <button type="button" @click="gerar()" class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-term-accent py-3 font-semibold text-term-bg shadow-md transition-colors hover:opacity-90 active:opacity-80">
+          <!-- heroicons: arrow-path -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
           </svg>
           Gerar nova senha
         </button>
 
         <div class="mt-4 flex items-center justify-between text-xs text-term-dim">
-          <span>16 caracteres · letras, números e símbolos</span>
-          <span x-show="copiado" x-cloak class="text-term-accent font-medium">Copiado!</span>
+          <span x-text="`${tamanho} caracteres · letras, números e símbolos`"></span>
+          <span x-show="copiado" x-cloak class="font-medium text-term-accent" role="status">Copiado!</span>
         </div>
 
       </div>
     </div>
   </main>
-
-<!-- VOLTAR PARA O HUB -->
-<a
-  href="../../index.html"
-  aria-label="Voltar para o hub de projetos"
-  class="fixed bottom-6 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors"
->
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
-</a>
-
-<!-- TOGGLE DE TEMA -->
-<button
-  type="button"
-  x-data="themeToggle()"
-  x-on:click="toggle()"
-  class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
-  aria-label="Alternar entre tema claro e escuro"
->
-  <svg class="icon-sun w-5 h-5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/><line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/><line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/></g></svg>
-  <svg class="icon-moon w-5 h-5" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></svg>
-</button>
-
 </body>
 </html>

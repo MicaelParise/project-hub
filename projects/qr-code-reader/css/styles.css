@@ -1,8 +1,0 @@
-/* Barra de rolagem fina para a área de texto do resultado */
-textarea::-webkit-scrollbar {
-  width: 6px;
-}
-textarea::-webkit-scrollbar-thumb {
-  background-color: var(--term-accent);
-  border-radius: 9999px;
-}

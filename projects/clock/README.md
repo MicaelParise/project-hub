@@ -1,6 +1,6 @@
 # Clock
 
-Relógio digital ao vivo, com saudação e badge de período do dia (manhã, tarde, entardecer ou noite) atualizados automaticamente, além de tema claro/escuro persistente.
+Relógio digital ao vivo, com saudação e badge de período do dia (manhã, tarde, entardecer ou noite) atualizados automaticamente, com ícones do Heroicons.
 
 ## Tecnologias
 

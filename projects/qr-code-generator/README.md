@@ -6,6 +6,7 @@ Gera QR Codes a partir de um texto ou link diretamente no navegador, com opção
 
 - Tailwind CSS
 - Alpine.js
+- qrcodejs
 - JavaScript
 
 ## Acesso

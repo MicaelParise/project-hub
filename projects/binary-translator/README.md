@@ -1,6 +1,6 @@
 # Binary Translator
 
-Conversor bidirecional entre texto e código binário, com suporte a tema claro/escuro.
+Conversor bidirecional entre texto e código binário. O texto é codificado em UTF-8, então acentos e emojis sobrevivem à ida e volta.
 
 ## Tecnologias
 

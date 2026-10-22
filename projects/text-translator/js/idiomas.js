@@ -1,3 +1,4 @@
+// Idiomas suportados pela MyMemory API: codigo (usado na traducao e na fala) -> nome exibido
 const idiomas = {
   "am-ET": "Amárico",
   "ar-SA": "Árabe",
@@ -18,7 +19,8 @@ const idiomas = {
   "de-DE": "Alemão",
   "dv-MV": "Maldivo",
   "el-GR": "Grego",
-  "en-GB": "Inglês",
+  "en-GB": "Inglês (Reino Unido)",
+  "en-US": "Inglês (EUA)",
   "es-ES": "Espanhol",
   "et-EE": "Estoniano",
   "eu-ES": "Basco",
@@ -64,7 +66,8 @@ const idiomas = {
   "ps-PK": "Pachto",
   "pis-SB": "Pijin",
   "pl-PL": "Polonês",
-  "pt-PT": "Português",
+  "pt-BR": "Português (Brasil)",
+  "pt-PT": "Português (Portugal)",
   "rn-BI": "Kirundi",
   "ro-RO": "Romeno",
   "ru-RU": "Russo",

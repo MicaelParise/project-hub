@@ -1,3 +1,5 @@
+const CHAVE_NOTAS = 'notas';
+
 document.addEventListener('alpine:init', () => {
   Alpine.data('notasApp', () => ({
     notas: carregarNotas(),
@@ -5,6 +7,11 @@ document.addEventListener('alpine:init', () => {
     notaEmEdicaoId: null,
     confirmExcluirId: null,
     form: { titulo: '', descricao: '' },
+
+    // ids sao Date.now(), entao ordenar por id = mais recentes primeiro
+    get notasOrdenadas() {
+      return [...this.notas].sort((a, b) => b.id - a.id);
+    },
 
     abrirNovo() {
       this.notaEmEdicaoId = null;
@@ -40,9 +47,11 @@ document.addEventListener('alpine:init', () => {
         this.notas.push({ id: Date.now(), titulo, descricao, data: formatarData(new Date()) });
       } else {
         const nota = this.notas.find((n) => n.id === this.notaEmEdicaoId);
-        nota.titulo = titulo;
-        nota.descricao = descricao;
-        nota.data = formatarData(new Date());
+        if (nota) {
+          nota.titulo = titulo;
+          nota.descricao = descricao;
+          nota.data = formatarData(new Date());
+        }
       }
 
       this.persistir();
@@ -64,23 +73,24 @@ document.addEventListener('alpine:init', () => {
     },
 
     persistir() {
-      localStorage.setItem('notas', JSON.stringify(this.notas));
+      try {
+        localStorage.setItem(CHAVE_NOTAS, JSON.stringify(this.notas));
+      } catch {
+        // armazenamento cheio ou bloqueado: as notas ficam so nesta sessao
+      }
     },
   }));
 });
 
 function carregarNotas() {
   try {
-    return JSON.parse(localStorage.getItem('notas')) || [];
+    const notas = JSON.parse(localStorage.getItem(CHAVE_NOTAS));
+    return Array.isArray(notas) ? notas : [];
   } catch {
     return [];
   }
 }
 
 function formatarData(data) {
-  const meses = [
-    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-  ];
-  return `${data.getDate()} de ${meses[data.getMonth()]} de ${data.getFullYear()}`;
+  return data.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
 }

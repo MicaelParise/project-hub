@@ -1,40 +1,52 @@
+function ePdf(arquivo) {
+  return arquivo.type === 'application/pdf' || arquivo.name.toLowerCase().endsWith('.pdf');
+}
+
 document.addEventListener('alpine:init', () => {
-    Alpine.data('visualizadorPdf', () => ({
-        arquivo: null,
-        urlArquivo: null,
-        arrastando: false,
+  Alpine.data('visualizadorPdf', () => ({
+    arquivo: null,
+    urlArquivo: null,
+    arrastando: false,
+    erro: '',
 
-        selecionar(evento) {
-            const arquivo = evento.target.files[0];
-            if (arquivo) this.definirArquivo(arquivo);
-        },
+    get tamanho() {
+      if (!this.arquivo) return '';
+      const kb = this.arquivo.size / 1024;
+      return kb < 1024 ? `${kb.toFixed(0)} KB` : `${(kb / 1024).toFixed(1)} MB`;
+    },
 
-        soltar(evento) {
-            this.arrastando = false;
-            const arquivo = evento.dataTransfer.files[0];
-            if (arquivo && arquivo.type === 'application/pdf') this.definirArquivo(arquivo);
-        },
+    selecionar(evento) {
+      this.carregar(evento.target.files[0]);
+    },
 
-        definirArquivo(arquivo) {
-            this.revogarUrl();
-            this.arquivo = arquivo;
-            this.urlArquivo = URL.createObjectURL(arquivo);
-        },
+    soltar(evento) {
+      this.arrastando = false;
+      this.carregar(evento.dataTransfer.files[0]);
+    },
 
-        remover() {
-            this.revogarUrl();
-            this.arquivo = null;
-            this.$refs.entradaArquivo.value = '';
-        },
+    carregar(arquivo) {
+      this.erro = '';
+      if (!arquivo) return;
+      if (!ePdf(arquivo)) {
+        this.erro = `"${arquivo.name}" não é um arquivo PDF.`;
+        return;
+      }
+      this.revogarUrl();
+      this.arquivo = arquivo;
+      this.urlArquivo = URL.createObjectURL(arquivo);
+    },
 
-        revogarUrl() {
-            if (this.urlArquivo) URL.revokeObjectURL(this.urlArquivo);
-            this.urlArquivo = null;
-        },
+    remover() {
+      this.revogarUrl();
+      this.arquivo = null;
+      this.erro = '';
+      // limpa o input para que selecionar o mesmo arquivo dispare 'change' de novo
+      this.$refs.entradaArquivo.value = '';
+    },
 
-        tamanho() {
-            const kb = this.arquivo.size / 1024;
-            return kb < 1024 ? `${kb.toFixed(0)} KB` : `${(kb / 1024).toFixed(1)} MB`;
-        },
-    }));
+    revogarUrl() {
+      if (this.urlArquivo) URL.revokeObjectURL(this.urlArquivo);
+      this.urlArquivo = null;
+    },
+  }));
 });

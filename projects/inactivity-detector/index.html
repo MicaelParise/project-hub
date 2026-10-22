@@ -1,158 +1,113 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Inactivity Detector :: MicaelParise</title>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inactivity Detector :: MicaelParise</title>
+  <meta name="description" content="Detecta quando você fica inativo e exibe um aviso.">
 
-    <style>
-      [x-cloak] {
-        display: none !important;
-      }
-    </style>
+  <!-- tema salvo aplicado antes da primeira pintura (sincrono, evita flash) -->
+  <script src="../../assets/js/tema.js"></script>
 
-    <script>
-      (function () {
-        var salvo = localStorage.getItem('tema');
-        var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.classList.toggle('dark', escuro);
-      })();
-    </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script src="../../assets/js/tailwind-tema.js"></script>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              term: {
-                bg: 'var(--term-bg)',
-                alt: 'var(--term-bg-alt)',
-                fg: 'var(--term-fg)',
-                dim: 'var(--term-fg-dim)',
-                accent: 'var(--term-accent)',
-                border: 'var(--term-border)',
-                soft: 'var(--term-fg-soft)',
-                toggle: 'var(--term-toggle-bg)',
-              },
-            },
-            fontFamily: {
-              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-              display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
-            },
-          },
-        },
-      };
-    </script>
+  <link rel="stylesheet" href="../../assets/css/style.css">
 
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <link rel="stylesheet" href="css/styles.css" />
+  <!-- scripts com defer executam em ordem: compartilhado, projeto e por ultimo o Alpine -->
+  <script src="../../assets/js/app.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
+</head>
+<body class="min-h-screen bg-term-bg text-term-fg font-mono antialiased">
+  <div class="scanlines" aria-hidden="true"></div>
 
-    <script src="../../assets/js/app.js" defer></script>
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-  </head>
-  <body class="min-h-screen bg-term-bg text-term-fg font-mono transition-colors duration-300">
-    <div class="scanlines" aria-hidden="true"></div>
+  <!-- init() e chamado automaticamente pelo Alpine (nao repetir em x-init) -->
+  <div x-data="detectorInatividade()">
+    <div
+      x-show="estado !== 'encerrado'"
+      x-cloak
+      class="card-frame fixed left-1/2 top-4 z-30 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-term-border bg-term-alt px-4 py-2 shadow-lg backdrop-blur sm:left-auto sm:right-6 sm:translate-x-0"
+    >
+      <!-- heroicons: clock -->
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-term-accent" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+      </svg>
+      <span class="text-lg font-semibold tabular-nums" x-text="tempoFormatado" aria-label="Tempo parado"></span>
+    </div>
 
-    <div x-data="detectorInatividade()" x-init="init()">
-      <div
-        x-show="estado !== 'encerrado'"
-        x-cloak
-        class="card-frame fixed top-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-term-border bg-term-alt px-4 py-2 shadow-lg backdrop-blur sm:left-auto sm:right-6 sm:translate-x-0"
-      >
-        <svg class="h-5 w-5 text-term-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 7v5l3 3" />
-        </svg>
-        <span class="text-lg font-semibold tabular-nums" x-text="tempoFormatado"></span>
-      </div>
-
-      <main class="flex min-h-screen items-center justify-center px-4 py-24 sm:py-4">
-        <div class="card-frame w-full max-w-md rounded-xl border border-term-border bg-term-alt p-8 text-center shadow-lg sm:p-10">
-          <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-term-accent/10 text-term-accent">
-            <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 12h4l3 8 4-16 3 8h4" />
-            </svg>
-          </div>
-
-          <h1 class="text-2xl font-bold">Inactivity Detector</h1>
-          <p class="mt-2 text-term-dim">
-            Mova o mouse, use o teclado ou toque na tela. Depois de
-            <span class="font-semibold text-term-accent" x-text="limiteInatividade"></span> segundos parado, você recebe um aviso.
-          </p>
-
-          <div
-            x-show="estado === 'encerrado'"
-            x-cloak
-            class="mt-6 rounded-xl border border-term-border bg-term-alt px-4 py-3 text-sm text-term-dim"
-          >
-            Sessão encerrada com sucesso. Qualquer movimento reinicia o monitor.
-          </div>
+    <main class="flex min-h-screen items-center justify-center px-4 py-24 sm:py-4">
+      <div class="card-frame w-full max-w-md rounded-xl border border-term-border bg-term-alt p-8 text-center shadow-lg sm:p-10">
+        <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-term-accent/10 text-term-accent">
+          <!-- heroicons: cursor-arrow-rays -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-7 w-7" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59" />
+          </svg>
         </div>
-      </main>
 
-      <div
-        x-show="estado === 'inativo'"
-        x-cloak
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-40 flex items-center justify-center bg-term-bg/60 px-4 backdrop-blur-sm"
-      >
-        <div class="card-frame w-full max-w-sm rounded-xl border border-term-border bg-term-alt p-8 text-center shadow-lg">
-          <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-term-accent/10 text-term-accent">
-            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 9v4M12 17h.01" />
-              <path d="M10.29 3.86 1.82 18a1 1 0 0 0 .86 1.5h18.64a1 1 0 0 0 .86-1.5L13.71 3.86a1 1 0 0 0-1.72 0z" />
-            </svg>
-          </div>
-          <h2 class="text-lg font-semibold text-term-accent">Você ficou inativo</h2>
-          <p class="mt-1 text-sm text-term-dim">Deseja continuar monitorando ou encerrar a sessão?</p>
-          <div class="mt-6 flex gap-3">
-            <button
-              @click="continuar()"
-              class="flex-1 rounded-xl border border-term-accent bg-term-accent px-4 py-2.5 font-medium text-term-bg shadow transition-colors hover:bg-term-accent/90"
-            >
-              Continuar
-            </button>
-            <button
-              @click="encerrarSessao()"
-              class="flex-1 rounded-xl border border-term-border px-4 py-2.5 font-medium text-term-dim transition-colors hover:bg-term-alt hover:text-term-fg"
-            >
-              Sair
-            </button>
-          </div>
+        <h1 class="font-display text-3xl text-term-accent text-glow">Inactivity Detector</h1>
+        <p class="mt-2 text-term-dim">
+          Mova o mouse, use o teclado ou toque na tela. Depois de
+          <span class="font-semibold text-term-accent" x-text="limiteInatividade"></span> segundos parado, você recebe um aviso.
+        </p>
+
+        <div
+          x-show="estado === 'encerrado'"
+          x-cloak
+          role="status"
+          class="mt-6 rounded-xl border border-term-border bg-term-bg px-4 py-3 text-sm text-term-dim"
+        >
+          Sessão encerrada com sucesso. O monitor reinicia em
+          <span class="font-semibold text-term-accent" x-text="Math.round(duracaoMensagemSaida / 1000)"></span> segundos.
+        </div>
+      </div>
+    </main>
+
+    <div
+      x-show="estado === 'inativo'"
+      x-cloak
+      x-transition:enter="transition ease-out duration-200"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      x-transition:leave="transition ease-in duration-150"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+      class="fixed inset-0 z-40 flex items-center justify-center bg-term-bg/60 px-4 backdrop-blur-sm"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="titulo-aviso"
+    >
+      <div class="card-frame w-full max-w-sm rounded-xl border border-term-border bg-term-alt p-8 text-center shadow-lg">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-term-accent/10 text-term-accent">
+          <!-- heroicons: exclamation-triangle -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <h2 id="titulo-aviso" class="text-lg font-semibold text-term-accent">Você ficou inativo</h2>
+        <p class="mt-1 text-sm text-term-dim">Deseja continuar monitorando ou encerrar a sessão?</p>
+        <div class="mt-6 flex gap-3">
+          <button
+            type="button"
+            @click="continuar()"
+            class="flex-1 rounded-xl border border-term-accent bg-term-accent px-4 py-2.5 font-medium text-term-bg shadow transition-colors hover:bg-term-accent/90"
+          >
+            Continuar
+          </button>
+          <button
+            type="button"
+            @click="encerrarSessao()"
+            class="flex-1 rounded-xl border border-term-border px-4 py-2.5 font-medium text-term-dim transition-colors hover:border-term-accent hover:text-term-accent"
+          >
+            Sair
+          </button>
         </div>
       </div>
     </div>
-
-    <a
-      href="../../index.html"
-      aria-label="Voltar para o hub de projetos"
-      class="fixed bottom-6 right-20 z-[1000] w-12 h-12 rounded-full border border-term-border bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-fg hover:text-term-accent hover:border-term-accent transition-colors"
-    >
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
-    </a>
-
-    <button
-      type="button"
-      x-data="themeToggle()"
-      x-on:click="toggle()"
-      class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
-      aria-label="Alternar entre tema claro e escuro"
-    >
-      <svg class="icon-sun w-5 h-5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/><line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/><line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/><line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/></g></svg>
-      <svg class="icon-moon w-5 h-5" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></svg>
-    </button>
-
-    <script src="js/app.js"></script>
-  </body>
+  </div>
+</body>
 </html>

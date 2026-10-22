@@ -6,97 +6,37 @@
 <title>MicaelParise :: ~/projetos</title>
 <meta name="description" content="Hub de projetos de MicaelParise — ferramentas web feitas com HTML, Tailwind CSS e Alpine.js.">
 
-<!-- 1) esconde qualquer coisa controlada pelo Alpine ate ele inicializar -->
-<style>[x-cloak] { display: none !important; }</style>
-
-<!-- 2) resolve o tema de forma sincrona, antes de qualquer pintura, evitando FOUC -->
-<script>
-  (function () {
-    var salvo = localStorage.getItem('tema');
-    var escuro = salvo ? salvo === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.classList.toggle('dark', escuro);
-  })();
-</script>
+<!-- tema salvo aplicado antes da primeira pintura (sincrono, evita flash) -->
+<script src="assets/js/tema.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-<!-- 3) tailwind via cdn -->
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        colors: {
-          term: {
-            bg: 'var(--term-bg)',
-            alt: 'var(--term-bg-alt)',
-            fg: 'var(--term-fg)',
-            dim: 'var(--term-fg-dim)',
-            accent: 'var(--term-accent)',
-            border: 'var(--term-border)',
-            soft: 'var(--term-fg-soft)',
-            toggle: 'var(--term-toggle-bg)',
-          },
-        },
-        fontFamily: {
-          mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-          display: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
-        },
-      },
-    },
-  };
-</script>
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script src="assets/js/tailwind-tema.js"></script>
 
 <link rel="stylesheet" href="assets/css/style.css">
 
-<style>
-  :root {
-    --term-bg: #eae7df;
-    --term-bg-alt: #dcd8cd;
-    --term-fg: #1b1f1c;
-    --term-fg-dim: #55605a;
-    --term-accent: #006b27;
-    --term-border: #006b274d;
-    --term-fg-soft: #3a4038;
-    --term-toggle-bg: #eae7dfcc;
-  }
-  html.dark {
-    --term-bg: #0a0e0a;
-    --term-bg-alt: #10160f;
-    --term-fg: #d6ffe0;
-    --term-fg-dim: #6f8f76;
-    --term-accent: #00ff41;
-    --term-border: #00ff4133;
-    --term-fg-soft: #a9c9ae;
-    --term-toggle-bg: #0a0e0acc;
-  }
-</style>
-
-<!-- 4) app.js precisa carregar antes do Alpine para registrar o listener de 'alpine:init' a tempo -->
 <script src="assets/js/app.js" defer></script>
-<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
 </head>
 
-<body class="bg-term-bg text-term-fg font-mono min-h-screen antialiased">
+<body data-hub class="bg-term-bg text-term-fg font-mono min-h-screen antialiased">
 
-<!-- sprite de icones, reaproveitado pelos cards e links sociais -->
+<!-- sprite de icones: marcas (github/linkedin/instagram) + Heroicons 24/outline -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="icon-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5C5.73.5.5 5.73.5 12c0 5.09 3.29 9.4 7.86 10.93.57.1.78-.25.78-.55v-2.15c-3.2.7-3.87-1.36-3.87-1.36-.53-1.33-1.29-1.69-1.29-1.69-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.59.24 2.76.12 3.05.74.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.08.78 2.18v3.23c0 .3.2.66.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"/></symbol>
   <symbol id="icon-linkedin" viewBox="0 0 24 24"><path fill="currentColor" d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.86 0-2.15 1.45-2.15 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.59 0 4.25 2.37 4.25 5.44zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56z"/></symbol>
   <symbol id="icon-instagram" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.55.22.95.47 1.37.89.42.42.67.82.89 1.37.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.55-.47.95-.89 1.37-.42.42-.82.67-1.37.89-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.68 3.68 0 0 1-1.37-.89 3.68 3.68 0 0 1-.89-1.37c-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.55.47-.95.89-1.37.42-.42.82-.67 1.37-.89.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07M12 0C8.74 0 8.33.01 7.05.07c-1.28.06-2.15.26-2.91.56a5.85 5.85 0 0 0-2.12 1.38A5.85 5.85 0 0 0 .64 4.13c-.3.76-.5 1.63-.56 2.91C.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.28.26 2.15.56 2.91.31.79.72 1.46 1.38 2.12.66.66 1.33 1.07 2.12 1.38.76.3 1.63.5 2.91.56 1.28.06 1.69.07 4.95.07s3.67-.01 4.95-.07c1.28-.06 2.15-.26 2.91-.56a5.85 5.85 0 0 0 2.12-1.38 5.85 5.85 0 0 0 1.38-2.12c.3-.76.5-1.63.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.28-.26-2.15-.56-2.91a5.85 5.85 0 0 0-1.38-2.12A5.85 5.85 0 0 0 19.87.63c-.76-.3-1.63-.5-2.91-.56C15.67.01 15.26 0 12 0zm0 5.84A6.16 6.16 0 1 0 12 18.16 6.16 6.16 0 0 0 12 5.84zm0 10.16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.41-10.4a1.44 1.44 0 1 1-2.88 0 1.44 1.44 0 0 1 2.88 0z"/></symbol>
-  <symbol id="icon-terminal" viewBox="0 0 24 24"><rect x="1.5" y="3.5" width="21" height="17" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.5L9.5 12 5 15.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="11.5" y1="15.5" x2="18" y2="15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
-  <symbol id="icon-external" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3M14 4h6v6M20 4l-9 9"/></symbol>
-  <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/><line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/><line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/><line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/></g></symbol>
-  <symbol id="icon-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></symbol>
+  <symbol id="icon-terminal" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z"/></symbol>
+  <symbol id="icon-external" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></symbol>
 </svg>
 
 <div class="scanlines" aria-hidden="true"></div>
 
 <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-term-bg focus:border focus:border-term-accent focus:px-3 focus:py-2">
-  Pular para o conteudo
+  Pular para o conteúdo
 </a>
 
 <!-- HEADER / HERO -->
@@ -107,7 +47,7 @@
       MicaelParise<span class="cursor-blink" aria-hidden="true">&nbsp;</span>
     </h1>
     <p class="mt-4 max-w-2xl text-term-fg text-base sm:text-lg">
-      Desenvolvedor full-stack — PHP/Laravel. Abaixo, um catalogo de ferramentas web publicadas no GitHub Pages.
+      Desenvolvedor full-stack — PHP/Laravel. Abaixo, um catálogo de ferramentas web publicadas no GitHub Pages.
     </p>
 
     <nav class="mt-8 flex flex-wrap items-center gap-3 sm:gap-4" aria-label="Redes sociais">
@@ -123,8 +63,8 @@
         <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-linkedin"/></svg>
         <span>linkedin</span>
       </a>
-      <a href="https://www.instagram.com/micaelparise" target="_blank" rel="noopener noreferrer"
-         aria-label="Abrir perfil do Instagram em nova aba"
+      <a href="https://www.instagram.com/m.esirap/" target="_blank" rel="noopener noreferrer"
+         aria-label="Abrir perfil @m.esirap no Instagram em nova aba"
          class="card-frame inline-flex items-center gap-2 border border-term-border px-3 py-2 rounded-xl text-sm hover:text-term-accent">
         <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-instagram"/></svg>
         <span>instagram</span>
@@ -147,7 +87,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">Binary Translator</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Conversor bidirecional entre texto e codigo binario, com suporte a tema claro/escuro.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Conversor bidirecional entre texto e código binário, com suporte a acentos e emojis (UTF-8).</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -163,7 +103,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">Clock</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Relogio digital que muda o plano de fundo automaticamente conforme o periodo do dia (manha, tarde, entardecer, noite), com tema claro/escuro persistente.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Relógio digital ao vivo com saudação e ícone que mudam conforme o período do dia (manhã, tarde, entardecer, noite).</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -179,7 +119,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">Cronometer</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Cronometro simples que mede horas, minutos, segundos e centesimos, com iniciar, pausar e reiniciar.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Cronômetro simples que mede horas, minutos, segundos e centésimos, com iniciar, pausar e reiniciar.</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -195,7 +135,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">File Reader</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Seleciona um arquivo de texto (.txt, .md, .html, .css, .js) e visualiza o conteudo direto no navegador, sem enviar nada a um servidor.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Seleciona um arquivo de texto (.txt, .md, .html, .css, .js) e visualiza o conteúdo direto no navegador, sem enviar nada a um servidor.</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -227,7 +167,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">Inactivity Detector</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Monitora mouse, teclado e toque, exibindo um aviso quando o usuario fica parado por tempo demais.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Monitora mouse, teclado e toque, exibindo um aviso quando o usuário fica parado por tempo demais.</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -243,7 +183,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">Music Player</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Player de musica web feito com HTML, Tailwind CSS e Alpine.js.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Player de música com playlist, barra de progresso, repetição, modo aleatório e capas por faixa.</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -259,7 +199,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">Notes App</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Bloco de notas pessoal que roda no navegador, com criacao, edicao e exclusao de notas salvas automaticamente no localStorage.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Bloco de notas pessoal que roda no navegador, com criação, edição e exclusão de notas salvas automaticamente no localStorage.</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -291,7 +231,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">QR Code Generator</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Gera QR Codes a partir de texto ou link, com opcao de tamanho, cores e download da imagem.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Gera QR Codes a partir de texto ou link, com opção de tamanho, cores e download da imagem.</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -307,7 +247,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">QR Code Reader</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Le o conteudo de um QR Code a partir de uma imagem enviada pelo usuario, direto no navegador.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Lê o conteúdo de um QR Code a partir de uma imagem enviada pelo usuário, decodificado direto no navegador.</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -323,7 +263,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">Random Password</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Gera senhas aleatorias fortes combinando maiusculas, minusculas, numeros e simbolos, com botao de copiar.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Gera senhas aleatórias fortes combinando maiúsculas, minúsculas, números e símbolos, com botão de copiar.</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -355,7 +295,7 @@
         <svg class="w-4 h-4 text-term-dim group-hover:text-term-accent" aria-hidden="true"><use href="#icon-external"/></svg>
       </div>
       <h2 class="font-display text-2xl mt-4 text-term-accent">Text Translator</h2>
-      <p class="mt-2 text-sm text-term-soft flex-1">Traduz texto entre mais de 90 idiomas, com opcoes de ouvir e copiar o texto original e a traducao.</p>
+      <p class="mt-2 text-sm text-term-soft flex-1">Traduz texto entre mais de 90 idiomas, com opções de ouvir e copiar o texto original e a tradução.</p>
       <div class="mt-4 flex flex-wrap gap-2 text-xs text-term-dim">
         <span class="border border-term-border rounded px-2 py-0.5">[Tailwind]</span>
         <span class="border border-term-border rounded px-2 py-0.5">[Alpine.js]</span>
@@ -373,17 +313,6 @@
   </div>
 </footer>
 
-<!-- TOGGLE DE TEMA -->
-<button
-  type="button"
-  x-data="themeToggle()"
-  x-on:click="toggle()"
-  class="theme-toggle fixed bottom-6 right-6 z-[1000] w-12 h-12 rounded-full border border-term-accent bg-term-toggle backdrop-blur flex items-center justify-center shadow-lg text-term-accent hover:text-glow"
-  aria-label="Alternar entre tema claro e escuro"
->
-  <svg class="icon-sun w-5 h-5" aria-hidden="true"><use href="#icon-sun"/></svg>
-  <svg class="icon-moon w-5 h-5" aria-hidden="true"><use href="#icon-moon"/></svg>
-</button>
 
 </body>
 </html>

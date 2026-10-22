@@ -1,5 +1,5 @@
-/* fonte e cor de fundo agora vem do tema compartilhado do hub (ver
-   ../../assets/css/style.css e o tailwind.config no <head>) */
+/* Cores, fontes e efeitos vem do tema compartilhado do hub
+   (../../assets/css/style.css + ../../assets/js/tailwind-tema.js). */
 
 /* esconde a barra de rolagem da lista de músicas mantendo a rolagem funcional */
 .no-scrollbar::-webkit-scrollbar {
@@ -7,9 +7,4 @@
 }
 .no-scrollbar {
   scrollbar-width: none;
-}
-
-/* evita o "flash" dos blocos x-show antes do Alpine.js inicializar */
-[x-cloak] {
-  display: none !important;
 }
